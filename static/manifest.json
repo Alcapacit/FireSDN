@@ -1,0 +1,28 @@
+{
+  "name": "FireSDN",
+  "short_name": "FireSDN",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4285f4",
+  "description": "Power up your mobile carrier needs.",
+  "permissions": [
+    "INTERNET",
+    "ACCESS_NETWORK_STATE",
+    "CHANGE_NETWORK_STATE",
+    "BIND_VPN_SERVICE",
+    "ACCESS_FINE_LOCATION",
+    "NEARBY_WIFI_DEVICES",
+    "BLUETOOTH_CONNECT",
+    "BLUETOOTH_SCAN",
+    "READ_PHONE_STATE",
+    "ACCESS_BACKGROUND_LOCATION"
+  ],
+  "icons": [
+    {
+      "src": "/static/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

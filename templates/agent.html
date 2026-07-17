@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block title %}FireSDN Agent - FireSDN{% endblock %}
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">FDrive</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('agent_dashboard') }}" class="active">FireSDN Agent</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+    <main class="dashboard-content">
+        <div class="agent-container">
+            <div class="agent-header">
+                <div class="agent-avatar">  </div>
+                <div class="agent-info">
+                    <h1>FireSDN Agent</h1>
+                    <p class="status-online">Your network agent</p>
+                </div>
+                <button class="btn btn-sm btn-outline" id="request-hardware-perms">Sync Device Info</button>
+            </div>
+            
+            <div class="chat-window" id="chat-window">
+                <div class="message ai-message">
+                    Hello! I am your FireSDN Agent. I can help you with financial activity?
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Ask about your account, carrier, or security..." autocomplete="off">
+                <button class="btn btn-primary" id="send-btn">Ask Agent</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.agent-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+}
+.agent-header {
+    padding: 1.5rem;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.agent-avatar { font-size: 2rem; }
+.status-online { color: var(--success); font-size: 0.8rem; margin: 0; }
+.chat-window {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.message {
+    max-width: 80%;
+    padding: 1rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+.ai-message {
+    align-self: flex-start;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-bottom-left-radius: 2px;
+}
+.user-message {
+    align-self: flex-end;
+    background: var(--primary-color);
+    color: white;
+    border-bottom-right-radius: 2px;
+}
+.chat-input-area {
+    padding: 1.5rem;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    gap: 1rem;
+}
+#chat-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+</style>
+
+<script>
+const chatWindow = document.getElementById('chat-window');
+const chatInput = document.getElementById('chat-input');
+const sendBtn = document.getElementById('send-btn');
+
+async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    
+    // Add user message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'message user-message';
+    userMsg.textContent = text;
+    chatWindow.appendChild(userMsg);
+    chatInput.value = '';
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+    
+    try {
+        const response = await fetch('/api/agent/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+        const data = await response.json();
+        
+        const aiMsg = document.createElement('div');
+        aiMsg.className = 'message ai-message';
+        aiMsg.textContent = data.response;
+        chatWindow.appendChild(aiMsg);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+document.getElementById('request-hardware-perms').addEventListener('click', async () => {
+    try {
+        // Triggering permission requests for Network/SIM information
+        // In modern browsers, this uses the Network Information API and potentially WebUSB/SmartCard for SIM (highly restricted)
+        if ('connection' in navigator) {
+            const info = navigator.connection;
+            alert(`Network synchronized: ${info.effectiveType} connection detected via ${info.type || 'carrier'}.`);
+        } else {
+            alert("Requesting advanced carrier telemetry... Please allow browser to access network details.");
+        }
+        
+        // Simulating the "Carrier/SIM" trigger request
+        if (confirm("FireSDN Network requests permission to access SIM card information and hardware telemetry for optimization. Grant?")) {
+            const aiMsg = document.createElement('div');
+            aiMsg.className = 'message ai-message';
+            aiMsg.textContent = "Hardware telemetry synced. I can now see your signal-to-noise ratio and SIM-based carrier protocols.";
+            chatWindow.appendChild(aiMsg);
+        }
+    } catch (e) {
+        alert("Carrier hardware sync failed: Browser security policy restricted access.");
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('download_page_dashboard') }}" class="active">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+    <main class="dashboard-content">
+        <div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0">Download FireSDN</h2>
+                    <p class="mb-0 mt-2">Get the powerful network app for your devices</p>
+                </div>
+                <div class="card-body p-5">
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-4">
+                            <div class="p-4 border rounded-3 hover-shadow transition">
+                                <i class="fab fa-windows fa-4x mb-3 text-primary"></i>
+                                <h4>Windows</h4>
+                                <p class="text-muted small">v2.4.0 (64-bit)</p>
+                                <a href="#" class="btn btn-primary w-100" onclick="simulateInstall('Windows')">Download .zip</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="p-4 border rounded-3 hover-shadow transition">
+                                <i class="fab fa-apple fa-4x mb-3 text-dark"></i>
+                                <h4>macOS</h4>
+                                <p class="text-muted small">v2.4.0 (Universal)</p>
+                                <a href="#" class="btn btn-dark w-100" onclick="simulateInstall('Mac')">Download .dmg</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="p-4 border rounded-3 hover-shadow transition">
+                                <i class="fab fa-android fa-4x mb-3 text-success"></i>
+                                <h4>Android</h4>
+                                <p class="text-muted small">v2.4.0 (APK)</p>
+                                <a href="#" class="btn btn-success w-100" onclick="simulateInstall('Android')">Download APK</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="installStatus" class="mt-4 d-none">
+                        <div class="alert alert-info">
+                            <h5 id="statusTitle">Preparing Download...</h5>
+                            <div class="progress mt-2" style="height: 10px;">
+                                <div id="installProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p id="statusMsg" class="mt-2 mb-0 small"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function simulateInstall(os) {
+    const statusDiv = document.getElementById('installStatus');
+    const progressBar = document.getElementById('installProgress');
+    const statusTitle = document.getElementById('statusTitle');
+    const statusMsg = document.getElementById('statusMsg');
+    
+    statusDiv.classList.remove('d-none');
+    
+    // Determine file path
+    let filePath = '';
+    if (os === 'Windows') filePath = '/static/downloads/form_installer_win.zip';
+    else if (os === 'Mac') filePath = '/static/downloads/form_installer_mac.dmg';
+    else if (os === 'Android') filePath = '/static/downloads/form_installer_android.apk';
+
+    statusTitle.innerText = `Preparing ${os} Download...`;
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 20;
+        progressBar.style.width = progress + '%';
+        if (progress >= 100) {
+            clearInterval(interval);
+            statusMsg.innerText = "Download starting...";
+            
+            // Real browser download trigger
+            const link = document.createElement('a');
+            link.href = filePath;
+            link.download = filePath.split('/').pop();
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            setTimeout(() => {
+                alert("Download started. Please run the installer to link your device.");
+                window.location.href = "/dashboard";
+            }, 1000);
+        }
+    }, 100);
+}
+</script>
+
+<style>
+.hover-shadow:hover {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    transform: translateY(-5px);
+}
+.transition {
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}

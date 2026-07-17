@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}Cloudspace Management - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}" class="active">Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+    
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <h1>Cloudspace Management</h1>
+                <p class="page-description">Manage detected forms in your FireSDN cloud space.</p>
+            </div>
+            <button class="btn btn-primary" id="add-device-btn"></button>
+        </div>
+        
+        <div class="device-limit">
+            <div class="limit-bar">
+                <div class="limit-fill" style="width: {{ (devices|length / 10 * 100)|int }}%"></div>
+            </div>
+            <span class="limit-text">{{ devices|length }} of 10 devices used</span>
+        </div>
+        
+        <div class="devices-grid" id="devices-list">
+            {% for device in devices %}
+            <div class="device-card {% if device.is_current %}current{% endif %}">
+                <div class="device-icon">
+                    {% if device.discovery_type == 'Bluetooth' %}
+                    <i class="fab fa-bluetooth-b" style="font-size: 2rem; color: #0082fc;"></i>
+                    {% elif device.discovery_type == 'Wi-Fi' %}
+                    <i class="fas fa-wifi" style="font-size: 2rem; color: #34a853;"></i>
+                    {% else %}
+                    <i class="fas fa-laptop" style="font-size: 2rem; color: #666;"></i>
+                    {% endif %}
+                </div>
+                <div class="device-info">
+                    <h3>{{ device.name or 'Unknown Device' }}</h3>
+                    <p class="device-os">{{ device.discovery_type or 'System' }} Connection</p>
+                    <div class="device-specs small text-secondary">
+                        {% if device.target %}
+                        <span><i class="fas fa-link mr-1"></i>{{ device.target }}</span>
+                        {% endif %}
+                        {% if device.event %}
+                        <div class="mt-1">
+                            <span><i class="fas fa-info-circle mr-1"></i>{{ device.event }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <p class="device-date">Last active: {{ device.timestamp[:16].replace('T', ' ') if device.timestamp else 'Recently' }}</p>
+                </div>
+                <div class="device-actions">
+                    <button class="btn btn-small btn-secondary remove-device" data-id="{{ loop.index0 }}">Remove</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="device-info-section">
+            <h2>About Cloudspace</h2>
+            <div class="info-cards">
+                <div class="info-card">
+                    <h4>What is cloudspace?</h4>
+                    <p>This feature automatically scans your device ip's routes to different services which can be knows as VMs or internal configurations.</p>
+                </div>
+                <div class="info-card">
+                    <h4>Cloudspace access</h4>
+                    <p>Cloudspace auto updates routes without needing manual intervention.</p>
+                </div>
+                <div class="info-card">
+                    <h4>Security</h4>
+                    <p>You can check configs associated with your specific cloud connection.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal" id="add-device-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3></h3>
+            <button class="modal-close" id="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Device Name</label>
+                <input type="text" id="device-name" placeholder="My Device">
+            </div>
+            <div class="form-group">
+                <label>Device Type</label>
+                <select id="device-type">
+                    <option value="desktop">Desktop</option>
+                    <option value="mobile">Mobile</option>
+                    <option value="tablet">Tablet</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Operating System</label>
+                <input type="text" id="device-os" placeholder="iOS 17">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancel-add">Cancel</button>
+            <button class="btn btn-primary" id="confirm-add">Add Device</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const modal = document.getElementById('add-device-modal');
+
+document.getElementById('add-device-btn').addEventListener('click', () => {
+    modal.style.display = 'flex';
+});
+
+document.getElementById('close-modal').addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+
+document.getElementById('cancel-add').addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+
+document.getElementById('confirm-add').addEventListener('click', async () => {
+    const name = document.getElementById('device-name').value;
+    const type = document.getElementById('device-type').value;
+    const os = document.getElementById('device-os').value;
+    
+    if (!name) {
+        alert('Please enter a device name');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/devices/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, type, os })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Error adding device');
+        }
+    } catch (error) {
+        alert('Error adding device: ' + error.message);
+    }
+});
+
+document.querySelectorAll('.remove-device').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        if (!confirm('Remove this device?')) return;
+        
+        const deviceId = this.dataset.id;
+        
+        try {
+            const response = await fetch(`/api/devices/${deviceId}`, {method: 'DELETE'});
+            const data = await response.json();
+            
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Error removing device');
+            }
+        } catch (error) {
+            alert('Error removing device: ' + error.message);
+        }
+    });
+});
+</script>
+{% endblock %}

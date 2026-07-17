@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancel Subscription - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <main class="dashboard-content">
+        <h1>Cancel Subscription</h1>
+        <div class="settings-card">
+            <p>Are you sure? You're about to lose these benefits and more - 
+Dynamic Tunnel,
+Speed Sharing,
+Security,
+Diagnostics,
+IT Tools and
+up to 500GB of managed Drive space.
+    </p>
+            
+            <form action="{{ url_for('cancel_subscription') }}" method="POST">
+                <div class="form-group">
+                    <label></label>
+                    <input type="password" name="password" class="form-control" required placeholder="Confirm your password">
+                </div>
+                
+                {% if current_user.totp_enabled %}
+                <div class="form-group mt-3">
+                    <label>Authenticator Code</label>
+                    <input type="text" name="totp_code" class="form-control" placeholder="Enter 6-digit code" maxlength="6" required>
+                </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                    <a href="{{ url_for('settings_dashboard') }}" class="btn btn-outline">Keep My Plan</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

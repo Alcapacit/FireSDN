@@ -1,0 +1,24 @@
+{
+  "server": {
+    "max_connections": 50000,
+    "connection_timeout_seconds": 30,
+    "log_level": "info"
+  },
+
+  "routing_engine": {
+    "algorithm": "multi_metric_dijkstra",
+    "recompute_interval_seconds": 5,
+    "enable_predictive_ai": true
+  },
+
+  "security": {
+    "rate_limit_per_ip": 1000,
+    "ddos_protection": true,
+    "block_geo_anomalies": true
+  },
+
+  "load_balancing": {
+    "strategy": "latency_aware_round_robin",
+    "rebalance_interval_seconds": 10
+  }
+}

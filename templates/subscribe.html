@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Subscribe to FireSDN{% endblock %}
+
+{% block content %}
+<div class="subscribe-container">
+    <div class="subscribe-card">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="FireSDN" class="subscribe-logo">
+        <h2>FireSDN Subscription</h2>
+        <div class="price-display">${{ price }}<span>/month</span></div>
+        <p class="trial-text">{{ trial_days }}-day free trial included</p>
+        
+        <ul class="features-list">
+            {% for feature in features %}
+            <li>{{ feature }}</li>
+            {% endfor %}
+        </ul>
+        
+        <button id="checkout-btn" class="btn btn-primary btn-large btn-full">
+            Start Free Trial
+        </button>
+        <p class="payment-note">You'll enter your card details on the next page. You won't be charged during the trial period.</p>
+    </div>
+</div>
+
+<script>
+document.getElementById('checkout-btn').addEventListener('click', async function() {
+    this.disabled = true;
+    this.textContent = 'Processing...';
+    
+    try {
+        const response = await fetch('/create-checkout-session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        if (data.url) {
+            window.location.href = data.url;
+        } else if (data.error) {
+            alert('Error: ' + data.error);
+            this.disabled = false;
+            this.textContent = 'Start Free Trial';
+        }
+    } catch (error) {
+        alert('An error occurred. Please try again.');
+        this.disabled = false;
+        this.textContent = 'Start Free Trial';
+    }
+});
+</script>
+{% endblock %}

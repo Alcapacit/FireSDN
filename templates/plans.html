@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}FireSDN Plus - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+            <a href="{{ url_for('plans_page') }}" class="active">Plans</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <div class="plans-header">
+            <h1>FireSDN Plus</h1>
+            <p></p>
+        </div>
+
+        <div class="plans-grid">
+            <div class="plan-card premier">
+                <div class="plan-badge"></div>
+                <h2>FireSDN Plus</h2>
+                <div class="plan-price">$5<span>/month</span></div>
+                <ul class="plan-features">
+                    <li><span class="icon">✓</span> Dynamic Tunnel Protection</li>
+                    <li><span class="icon">✓</span> Speed Sharing</li>
+                    <li><span class="icon">✓</span> IT Tools</li>
+                    <li><span class="icon">✓</span> 500GB Cloud Storage</li>
+                    <li><span class="icon">✓</span> Advanced Analytics</li>
+                    <li><span class="icon">✓</span> Network manager</li>
+                </ul>
+                <form action="{{ url_for('api_select_plan') }}" method="POST">
+                    <input type="hidden" name="plan" value="FireSDN Plus">
+                    <button type="submit" class="btn btn-primary btn-full">Get FireSDN Plus</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="current-plan-status">
+            <h3>Current Plan: <span class="badge">{{ current_user.plan_tag if current_user.plan_tag else 'Free' }}</span></h3>
+        </div>
+    </main>
+</div>
+<style>
+.plans-header { text-align: center; margin-bottom: 3rem; }
+.plans-header h1 { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem; }
+.plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 500px; margin: 0 auto; }
+.plan-card { background: var(--bg-secondary); border-radius: 20px; padding: 2rem; border: 1px solid var(--border-light); position: relative; display: flex; flex-direction: column; transition: transform 0.3s ease; }
+.plan-card:hover { transform: translateY(-5px); }
+.plan-card.premier { border-color: var(--primary); box-shadow: 0 10px 30px rgba(26, 115, 232, 0.1); }
+.plan-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.plan-price { font-size: 3rem; font-weight: 700; margin: 1.5rem 0; }
+.plan-price span { font-size: 1rem; color: var(--text-tertiary); font-weight: 400; }
+.plan-features { list-style: none; padding: 0; margin-bottom: 2rem; flex-grow: 1; }
+.plan-features li { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-secondary); }
+.plan-features .icon { color: var(--success); font-weight: 700; }
+.btn-full { width: 100%; margin-top: auto; }
+.current-plan-status { text-align: center; margin-top: 3rem; padding: 2rem; background: var(--bg-tertiary); border-radius: 12px; }
+.badge { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; margin-left: 0.5rem; }
+</style>
+{% endblock %}

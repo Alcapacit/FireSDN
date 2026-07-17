@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}API Keys - FireSDN{% endblock %}
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">FDrive</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+            <a href="{{ url_for('api_page') }}" class="active">API</a>
+        </nav>
+    </aside>
+    <main class="dashboard-content">
+        <h1>FireSDN API</h1>
+        <p class="page-description">Manage your API keys for access to FireSDN services.</p>
+        
+        <div class="card bg-secondary border-light mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Your API Key</h5>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control bg-dark text-white border-secondary" value="{{ api_key }}" readonly id="api-key-input">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-primary" type="button" onclick="copyApiKey()">Copy</button>
+                    </div>
+                </div>
+                <p class="small text-muted">Keep this key secret. Do not share it or commit it to version control.</p>
+                <button class="btn btn-danger btn-sm">Regenerate Key</button>
+            </div>
+        </div>
+        
+        <h3>Documentation</h3>
+        <p>Use your API key in the <code>X-API-Key</code> header for all requests to <code>https://{{ request.host }}/api/v1/</code>.</p>
+    </main>
+</div>
+
+<script>
+function copyApiKey() {
+    const input = document.getElementById('api-key-input');
+    input.select();
+    document.execCommand('copy');
+    showNotification('API Key copied to clipboard', 'success');
+}
+</script>
+{% endblock %}

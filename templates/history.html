@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Connection History - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}" class="active">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+    
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <h1>Connection History</h1>
+                <p class="page-description">View your recent network activity and events</p>
+            </div>
+            {% if history %}
+            <button class="btn btn-secondary" id="clear-history">Clear History</button>
+            {% endif %}
+        </div>
+        
+        <div class="history-filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="vpn">Dynamic Tunnel</button>
+            <button class="filter-btn" data-filter="security">Security</button>
+            <button class="filter-btn" data-filter="speed_test">Speed Tests</button>
+            <button class="filter-btn" data-filter="device">Cloudspace</button>
+        </div>
+        
+        <div class="history-timeline" id="history-list">
+            {% if history %}
+                {% for event in history %}
+                <div class="history-item" data-type="{{ event.type }}">
+                    <div class="event-icon">
+                        {% if 'vpn' in event.type %}
+                        <i class="fas fa-shield-alt"></i>
+                        {% elif 'security' in event.type or 'threat' in event.type or 'alert' in event.type %}
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        {% elif 'bluetooth' in event.type %}
+                        <i class="fab fa-bluetooth"></i>
+                        {% elif 'network' in event.type %}
+                        <i class="fas fa-wifi"></i>
+                        {% elif 'speed' in event.type %}
+                        <i class="fas fa-tachometer-alt"></i>
+                        {% elif 'device' in event.type %}
+                        <i class="fas fa-laptop-code"></i>
+                        {% elif 'iot' in event.type %}
+                        <i class="fas fa-microchip text-primary"></i>
+                        {% else %}
+                        <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="event-content">
+                        <div class="event-header">
+                            <span class="event-type">{{ event.type.replace('_', ' ').title() }}</span>
+                            <span class="event-time">{{ event.timestamp[:16].replace('T', ' ') }}</span>
+                        </div>
+                        <div class="event-details">
+                            {% if event.details %}
+                                {% for key, value in event.details.items() %}
+                                <div class="detail-row">
+                                    <span class="detail-key">{{ key.replace('_', ' ').title() }}:</span>
+                                    <span class="detail-value text-white">{{ value }}</span>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-history">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                <h3>No Activity Detected</h3>
+                <p>System monitoring is active. Any background network or device activity will be recorded here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<script>
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        const filter = this.dataset.filter;
+        document.querySelectorAll('.history-item').forEach(item => {
+            if (filter === 'all' || item.dataset.type.includes(filter)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+});
+
+const clearBtn = document.getElementById('clear-history');
+if (clearBtn) {
+    clearBtn.addEventListener('click', async function() {
+        if (!confirm('Are you sure you want to clear your history?')) return;
+        
+        try {
+            const response = await fetch('/api/history/clear', {method: 'POST'});
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            alert('Error clearing history');
+        }
+    });
+}
+</script>
+{% endblock %}

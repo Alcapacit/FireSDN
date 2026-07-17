@@ -1,0 +1,6 @@
+{
+  "refresh_interval_seconds": 3,
+  "enable_charts": true,
+  "bind_address": "0.0.0.0",
+  "port": 8080
+}

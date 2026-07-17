@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+
+{% block title %}Account - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('discovery_dashboard') }}">Discovery</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('cloud_dashboard') }}">FDrive</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('savings_dashboard') }}">Savings</a>
+            <a href="{{ url_for('domains_dashboard') }}">Domains</a>
+            <a href="{{ url_for('account_dashboard') }}" class="active">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+    
+    <main class="dashboard-content">
+        <h1>Account & Billing</h1>
+        
+        <div class="account-overview">
+            <div class="account-card main-card">
+                <div class="account-header">
+                    <div class="avatar">
+                        <span>{{ current_user.username[0].upper() }}</span>
+                    </div>
+                    <div class="account-info">
+                        <h2>{{ current_user.username }}</h2>
+                        <p>{{ current_user.email }}</p>
+                    </div>
+                    {% if subscription.is_pro %}
+                    <span class="pro-badge-large">Active</span>
+                    {% endif %}
+                </div>
+                
+                <div class="account-stats">
+                    <div class="stat">
+                        <span class="value">{{ subscription.created_at[:10] if subscription.created_at else 'N/A' }}</span>
+                        <span class="label">Member Since</span>
+                    </div>
+                    <div class="stat">
+                        <span class="value">{{ 'Active' if subscription.is_pro else 'Inactive' }}</span>
+                        <span class="label">Status</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="account-card phone-card" style="margin-top: 1.5rem;">
+                <div class="card-header-flex">
+                    <div class="icon-circle-small bg-blue">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="info">
+                        <h3>USSD/Phone Number</h3>
+                        <p class="text-secondary">Manage your linked phone number</p>
+                    </div>
+                </div>
+                
+                <div class="phone-display mt-3">
+                    {% if current_user.phone %}
+                    <div class="linked-phone">
+                        <span class="phone-value">{{ current_user.phone }}</span>
+                        <span class="badge {{ 'badge-success' if current_user.phone_verified else 'badge-warning' }}">
+                            {{ '' if current_user.phone_verified else '' }}
+                        </span>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No phone number linked</p>
+                    {% endif %}
+                </div>
+
+                <div class="phone-actions mt-3">
+                    <div class="input-google">
+                        <input type="tel" id="new-phone" placeholder="+1234567890" value="{{ current_user.phone or '' }}">
+                       <button onclick="updatePhoneNumber()" class="btn-icon"><i class="fas fa-save">Register</i></button>
+                    </div>
+                    <p class="small text-muted mt-2"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="subscription-section">
+            <h2>Account Plan</h2>
+            
+            {% if subscription.is_pro %}
+            <div class="subscription-card active">
+                <div class="subscription-header">
+                    <div class="plan-info">
+                        <h3>FireSDN Plus</h3>
+                        {% if subscription.is_whitelisted %}
+                        <p class="plan-price">$5/month</p>
+                        {% else %}
+                        <p class="plan-price">${{ subscription.price }}/month</p>
+                        {% endif %}
+                    </div>
+                    <span class="status-badge active">Active</span>
+                </div>
+                
+                {% if subscription.is_whitelisted %}
+                <div class="whitelisted-notice">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg
+                    <span>You are subscribed.</span>
+                </div>
+                {% elif subscription.trial_end %}
+                <div class="trial-info">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                    <span>Trial ends: {{ subscription.trial_end[:10] }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="plan-features">
+                    <h4>Your Plan Includes:</h4>
+                    <ul>
+                        <li>Dynamic Tunnel </li>
+                        <li>Speed Sharing</li>
+                        <li>Security</li>
+                        <li>Diagnostics</li>
+                        <li>IT Tools</li>
+                        <li>Up to 500GB of managed Drive space</li>
+                    </ul>
+                </div>
+                
+                {% if not subscription.is_whitelisted %}
+                <div class="subscription-actions">
+                    <a href="{{ url_for('cancel_subscription') }}" class="btn btn-outline">Cancel Plan</a>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="subscription-card inactive">
+                <div class="subscription-header">
+                    <div class="plan-info">
+                        <h3>No Active Plan</h3>
+                        <p>Subscribe to unlock all features</p>
+                    </div>
+                </div>
+                
+                <div class="upgrade-cta">
+                    <h4>FireSDN Plus</h4>
+                    <p class="price">$5<span>/month</span></p>
+                    <p class="trial-text">Start with a 7-day free trial</p>
+                    <a href="{{ url_for('subscribe') }}" class="btn btn-primary btn-large">Subscribe Now</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="billing-section">
+            <h2>Billing History</h2>
+            <div class="billing-card">
+                {% if subscription.is_pro and not subscription.is_whitelisted %}
+                <table class="billing-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ subscription.created_at[:10] if subscription.created_at else 'N/A' }}</td>
+                            <td>FireSDN Plus</td>
+                            <td>${{ subscription.price }}.00</td>
+                            <td><span class="status-paid">Outgoing</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-billing">
+                    <p>No billing history available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="account-actions-section">
+            <h2>Account Actions</h2>
+            <div class="actions-card">
+                <div class="action-row">
+                    <div class="action-info">
+                        <h4>Export Data</h4>
+                        <p>Download a copy of your account data</p>
+                    </div>
+                    <button class="btn btn-secondary">Export</button>
+                </div>
+                <div class="action-row">
+                    <div class="action-info">
+                        <h4>Delete Account</h4>
+                        <p class="text-danger">Permanently delete your account and all data</p>
+                    </div>
+                    <button class="btn btn-danger" id="delete-account-btn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal" id="delete-account-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Delete Account</h3>
+            <button class="modal-close" id="close-delete-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" id="delete-password" placeholder="Your password">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancel-delete">Cancel</button>
+            <button class="btn btn-danger" id="confirm-delete">Delete Permanently</button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function updatePhoneNumber() {
+    const phone = document.getElementById('new-phone').value;
+    if (!phone) return alert('Please enter a phone number');
+    
+    try {
+        const response = await fetch('/api/account/update-phone', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ phone })
+        });
+        const data = await response.json();
+        if (data.success) {
+            alert('Phone number updated successfully!');
+            location.reload();
+        } else {
+            alert(data.error || 'Error updating phone number');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+const deleteModal = document.getElementById('delete-account-modal');
+
+document.getElementById('delete-account-btn').addEventListener('click', () => {
+    deleteModal.style.display = 'flex';
+});
+
+document.getElementById('close-delete-modal').addEventListener('click', () => {
+    deleteModal.style.display = 'none';
+});
+
+document.getElementById('cancel-delete').addEventListener('click', () => {
+    deleteModal.style.display = 'none';
+});
+
+document.getElementById('confirm-delete').addEventListener('click', async () => {
+    const password = document.getElementById('delete-password').value;
+    if (!password) {
+        alert('Please enter your password to confirm');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/account/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = '/';
+        } else {
+            alert(data.error || 'Error deleting account');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

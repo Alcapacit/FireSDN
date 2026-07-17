@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block title %}Extensions - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('flynx_dashboard') }}" class="active">FLYNX Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <div class="google-header">
+            <h1>Browser Extensions</h1>
+            <p class="text-secondary">Enhance your security while browsing with FireSDN native plugins.</p>
+        </div>
+
+        <div class="plugin-container mt-4">
+            <div class="plugin-card-featured">
+                <div class="plugin-badge">Recommended</div>
+                <div class="plugin-info-main">
+                    <div class="plugin-icon-lg bg-blue">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="plugin-details">
+                        <h2>FireSDN Extension</h2>
+                        <p class="version">Version 2.4.0 • Updated March 2026</p>
+                    </div>
+                </div>
+
+                <div class="plugin-features-grid">
+                    <div class="feature-item">
+                        <i class="fas fa-mask"></i>
+                        <span>Anti-Fingerprinting</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-ad"></i>
+                        <span>Ad & Tracker Blocker</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-lock"></i>
+                        <span>Automatic HTTPS</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-link"></i>
+                        <span>Dynamic Tunnel Integration</span>
+                    </div>
+                </div>
+
+                <div class="plugin-actions">
+                    <p class="text-secondary mb-3">Install the FireSDN Browser Extension directly:</p>
+                    <div class="plugin-source-code text-left mb-4" style="background: #f1f3f4; padding: 1.5rem; border-radius: 12px; font-family: monospace; font-size: 0.85rem; color: #3c4043; border: 1px solid #dadce0;">
+                        <div class="mb-2"><strong>manifest.json</strong></div>
+                        <pre style="white-space: pre-wrap; margin-bottom: 1rem;">{
+  "manifest_version": 3,
+  "name": "FireSDN Extension",
+  "version": "1.0.0",
+  "action": { "default_popup": "popup.html" }
+}</pre>
+                        <div class="mb-2"><strong>popup.html</strong></div>
+                        <pre style="white-space: pre-wrap; margin-bottom: 1rem;">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body style="width: 200px; padding: 10px;"&gt;
+  &lt;h3&gt;FireSDN&lt;/h3&gt;
+  &lt;p&gt;Status: &lt;span style="color: green"&gt;Secure&lt;/span&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+                        <div class="mb-2"><strong>content.js</strong></div>
+                        <pre style="white-space: pre-wrap;">console.log("FireSDN active");</pre>
+                    </div>
+                    <div class="alert alert-info py-2 px-3 small">
+                        <i class="fas fa-info-circle mr-2"></i> To use: Copy these files to a folder and use "Load unpacked" in Chrome Extensions.
+                    </div>
+                </div>
+            </div>
+
+            <div class="plugin-secondary-grid mt-4">
+                <div class="plugin-card-sm">
+                    <div class="card-header-sm">
+                        <div class="icon-circle bg-blue">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <h3>F-Pay Mobile</h3>
+                    </div>
+                    <p>Connect your F-Pay wallet to your browser for one-click payments.</p>
+                    <a href="{{ url_for('f_pay_dashboard') }}" class="btn btn-sm btn-link">Open F-Pay</a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.plugin-container {
+    max-width: 900px;
+}
+
+.plugin-card-featured {
+    background: #fff;
+    border-radius: 28px;
+    padding: 2.5rem;
+    position: relative;
+    border: 1px solid #dadce0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.plugin-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #e8f0fe;
+    color: #1967d2;
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.plugin-info-main {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.plugin-icon-lg {
+    width: 100px;
+    height: 100px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: #fff;
+}
+
+.plugin-details h2 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #3c4043;
+}
+
+.version {
+    color: #5f6368;
+    margin-bottom: 0.5rem;
+}
+
+.rating {
+    color: #fbbc05;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rating span {
+    color: #5f6368;
+    margin-left: 10px;
+    font-size: 0.9rem;
+}
+
+.plugin-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.1rem;
+    color: #3c4043;
+}
+
+.feature-item i {
+    color: #1a73e8;
+    width: 20px;
+}
+
+.plugin-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.plugin-secondary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.plugin-card-sm {
+    background: #fff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    border: 1px solid #dadce0;
+}
+
+.card-header-sm {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.card-header-sm h3 {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.bg-blue { background: #4285f4; }
+.bg-red { background: #ea4335; }
+.bg-green { background: #34a853; }
+
+.btn-lg {
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-weight: 500;
+}
+</style>
+
+<script>
+function installExtension() {
+    showNotification('Installation initialized. Check your browser address bar for the permission prompt.', 'info');
+    setTimeout(() => {
+        alert('Browser extension installation is restricted in the sandbox environment. In production, this would trigger the .crx or .xpi download.');
+    }, 2000);
+}
+</script>
+{% endblock %}

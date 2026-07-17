@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block title %}Network Diagnostics - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}" class="active">IP Protocol</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+    
+    <main class="dashboard-content">
+        <h1>Network Diagnostics</h1>
+        <p class="page-description">Run real-time tests to analyze your network performance</p>
+        
+        <div class="diagnostics-grid">
+            <div class="diagnostic-card">
+                <div class="diagnostic-header">
+                    <div class="diagnostic-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                    </div>
+                    <h3>Speed Test</h3>
+                </div>
+                <p>Measure your download and upload speeds</p>
+                <button class="btn btn-primary" id="run-speedtest">Run Speed Test</button>
+                <div class="test-results" id="speedtest-results">
+                    <div class="result-item">
+                        <span class="label">Download</span>
+                        <span class="value" id="speed-download">--</span>
+                        <span class="unit">Mbps</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Upload</span>
+                        <span class="value" id="speed-upload">--</span>
+                        <span class="unit">Mbps</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Latency</span>
+                        <span class="value" id="speed-latency">--</span>
+                        <span class="unit">ms</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="diagnostic-card">
+                <div class="diagnostic-header">
+                    <div class="diagnostic-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3>Ping Test</h3>
+                </div>
+                <p>Test latency to a specific server</p>
+                <div class="input-group">
+                    <input type="text" id="ping-target" placeholder="8.8.8.8" value="8.8.8.8">
+                    <button class="btn btn-primary" id="run-ping">Ping</button>
+                </div>
+                <div class="test-results" id="ping-results">
+                    <div class="ping-stats">
+                        <div class="stat">
+                            <span class="label">Avg</span>
+                            <span class="value" id="ping-avg">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Min</span>
+                            <span class="value" id="ping-min">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Max</span>
+                            <span class="value" id="ping-max">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Loss</span>
+                            <span class="value" id="ping-loss">--%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="diagnostic-card full-width">
+                <div class="diagnostic-header">
+                    <div class="diagnostic-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Traceroute</h3>
+                </div>
+                <p>Trace the path packets take to reach a destination</p>
+                <div class="input-group">
+                    <input type="text" id="trace-target" placeholder="8.8.8.8" value="8.8.8.8">
+                    <button class="btn btn-primary" id="run-trace">Trace Route</button>
+                </div>
+                <div class="traceroute-results" id="trace-results">
+                    <table class="trace-table">
+                        <thead>
+                            <tr>
+                                <th>Hop</th>
+                                <th>Address</th>
+                                <th>Hostname</th>
+                                <th>Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trace-hops">
+                            <tr><td colspan="4" class="empty-state">Click "Trace Route" to begin</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="quick-diagnostics">
+            <h2>Quick Diagnostics</h2>
+            <div class="quick-tests">
+                <div class="quick-test">
+                    <span class="test-name">DNS Resolution</span>
+                    <span class="test-status" id="dns-status">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34a853" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Working
+                    </span>
+                </div>
+                <div class="quick-test">
+                    <span class="test-name">Internet Connection</span>
+                    <span class="test-status" id="internet-status">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34a853" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Connected
+                    </span>
+                </div>
+                <div class="quick-test">
+                    <span class="test-name">FireSDN Servers</span>
+                    <span class="test-status" id="form-status">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34a853" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Online
+                    </span>
+                </div>
+                {% if user_state.vpn_enabled %}
+                <div class="quick-test">
+                    <span class="test-name">Dynamic Tunnel Connection</span>
+                    <span class="test-status active">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34a853" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Connected
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+document.getElementById('run-speedtest').addEventListener('click', async function() {
+    this.disabled = true;
+    this.textContent = 'Testing...';
+    
+    document.getElementById('speed-download').textContent = '...';
+    document.getElementById('speed-upload').textContent = '...';
+    document.getElementById('speed-latency').textContent = '...';
+    
+    try {
+        const response = await fetch('/api/diagnostics/speedtest', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        
+        document.getElementById('speed-download').textContent = data.download_mbps;
+        document.getElementById('speed-upload').textContent = data.upload_mbps;
+        document.getElementById('speed-latency').textContent = data.latency_ms;
+    } catch (error) {
+        alert('Error running speed test: ' + error.message);
+    }
+    
+    this.disabled = false;
+    this.textContent = 'Run Speed Test';
+});
+
+document.getElementById('run-ping').addEventListener('click', async function() {
+    this.disabled = true;
+    this.textContent = 'Pinging...';
+    
+    const target = document.getElementById('ping-target').value || '8.8.8.8';
+    
+    try {
+        const response = await fetch('/api/diagnostics/ping', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ target })
+        });
+        const data = await response.json();
+        
+        document.getElementById('ping-avg').textContent = data.statistics.avg_latency_ms + 'ms';
+        document.getElementById('ping-min').textContent = data.statistics.min_latency_ms + 'ms';
+        document.getElementById('ping-max').textContent = data.statistics.max_latency_ms + 'ms';
+        document.getElementById('ping-loss').textContent = data.statistics.packet_loss_percent + '%';
+    } catch (error) {
+        alert('Error running ping test: ' + error.message);
+    }
+    
+    this.disabled = false;
+    this.textContent = 'Ping';
+});
+
+document.getElementById('run-trace').addEventListener('click', async function() {
+    this.disabled = true;
+    this.textContent = 'Tracing...';
+    
+    const target = document.getElementById('trace-target').value || '8.8.8.8';
+    const tbody = document.getElementById('trace-hops');
+    tbody.innerHTML = '<tr><td colspan="4">Running traceroute...</td></tr>';
+    
+    try {
+        const response = await fetch('/api/diagnostics/traceroute', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ target })
+        });
+        const data = await response.json();
+        
+        tbody.innerHTML = data.hops.map(hop => `
+            <tr>
+                <td>${hop.hop}</td>
+                <td>${hop.address}</td>
+                <td>${hop.hostname}</td>
+                <td>${hop.latency_ms}ms</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="4">Error: ' + error.message + '</td></tr>';
+    }
+    
+    this.disabled = false;
+    this.textContent = 'Trace Route';
+});
+</script>
+{% endblock %}

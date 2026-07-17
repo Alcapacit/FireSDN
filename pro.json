@@ -1,0 +1,134 @@
+{
+  "pro_users": [
+    {
+      "username": "qasim",
+      "email": "qasimthemuslimdiscord@gmail.com",
+      "plan": "FireSDN Plus"
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    },
+    {
+      "username": "",
+      "email": "",
+      "plan": ""
+    }
+  ],
+  "price_ids": {
+    "Regular": "price_regular_monthly_id",
+    "Premier": "price_premier_monthly_id"
+  },
+  "subscription": {
+    "price_usd": 5,
+    "trial_days": 7,
+    "features": [
+      "VPN",
+      "Speed Sharing",
+      "Mesh Network",
+      "Advanced Analytics"
+    ]
+  },
+  "stripe_price_id": "price_form_pro_monthly"
+}

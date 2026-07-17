@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('discovery_dashboard') }}">Discovery</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('cloud_dashboard') }}">FDrive</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('savings_dashboard') }}">Savings</a>
+            <a href="{{ url_for('domains_dashboard') }}">Domains</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}" class="active">Settings</a>
+        </nav>
+    </aside>
+    
+    <main class="dashboard-content">
+        <h1>Settings</h1>
+        
+        <div class="settings-section">
+            <h2>Account</h2>
+            <div class="settings-card">
+                <div class="setting-row">
+                    <label>Current Plan  </label>
+                    <span class="badge">{{ current_user.plan_tag }}</span>
+                </div>
+                <div class="setting-row">
+                    <label>Username   </label>
+                    <span>{{ current_user.username }}</span>
+                </div>
+                <div class="setting-row">
+                    <label>Email </label>
+                    <span>{{ current_user.email }}</span>
+                </div>
+                <div class="setting-row">
+                    <label>Member Since </label>
+                    <span>{{ current_user.created_at.strftime('%B %d, %Y') }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h2>Subscription</h2>
+            <div class="settings-card">
+                <div class="setting-row">
+                    <label>Status</label>
+                    <span class="{% if current_user.has_active_subscription() %}status-active{% else %}status-inactive{% endif %}">
+                        {{ 'Active' if current_user.has_active_subscription() else 'Inactive' }}
+                    </span>
+                </div>
+                {% if current_user.trial_end %}
+                <div class="setting-row">
+                    <label>Trial Ends</label>
+                    <span>{{ current_user.trial_end.strftime('%B %d, %Y') }}</span>
+                </div>
+                {% endif %}
+                
+                {% if current_user.has_active_subscription() %}
+                <div class="benefits-section">
+                    <h3>Your Benefits</h3>
+                    <div class="benefits-list">
+                        {% if benefits.vpn_access %}<div class="benefit-item active">VPN Access</div>{% endif %}
+                        {% if benefits.speed_sharing %}<div class="benefit-item active">Speed Sharing</div>{% endif %}
+                        {% if benefits.security_protection %}<div class="benefit-item active">Security Protection</div>{% endif %}
+                        {% if benefits.route_optimization %}<div class="benefit-item active">Route Optimization</div>{% endif %}
+                        {% if benefits.advanced_analytics %}<div class="benefit-item active">Advanced Analytics</div>{% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <a href="{{ url_for('subscribe') }}" class="btn btn-primary">Subscribe</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h2>Active Services Status</h2>
+            <div class="settings-card">
+                <div class="setting-row">
+                    <label>Dynamic Tunnel</label>
+                    <span class="{% if user_state.vpn_enabled %}status-active{% else %}status-inactive{% endif %}">
+                        {% if user_state.vpn_enabled %}Connected{% else %}Disconnected{% endif %}
+                    </span>
+                </div>
+                <div class="setting-row">
+                    <label>Speed Sharing</label>
+                    <span class="{% if user_state.speed_sharing_enabled %}status-active{% else %}status-inactive{% endif %}">
+                        {% if user_state.speed_sharing_enabled %}Enabled ({{ user_state.shared_bandwidth_mbps }} Mbps){% else %}Disabled{% endif %}
+                    </span>
+                </div>
+                <div class="setting-row">
+                    <label>Security Protection</label>
+                    <span class="{% if user_state.security_enabled %}status-active{% else %}status-inactive{% endif %}">
+                        {% if user_state.security_enabled %}Protected{% else %}Not Protected{% endif %}
+                    </span>
+                </div>
+                <div class="setting-row">
+                    <label>Route Optimization</label>
+                    <span class="{% if user_state.route_optimization_enabled %}status-active{% else %}status-inactive{% endif %}">
+                        {% if user_state.route_optimization_enabled %}Optimized{% else %}Standard{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h2>Two-Factor Authentication</h2>
+            <div class="settings-card">
+                <div class="setting-row">
+                    <div>
+                        <label>2FA Status</label>
+                        <p class="setting-desc">Add an extra layer of security to your account</p>
+                    </div>
+                    {% if current_user.totp_enabled %}
+                    <span class="status-active">Enabled</span>
+                    {% else %}
+                    <span class="status-inactive">Disabled</span>
+                    {% endif %}
+                </div>
+                {% if current_user.totp_enabled %}
+                <form method="POST" action="{{ url_for('disable_2fa') }}" class="disable-2fa-form">
+                    <p>Enter your 2FA code to disable:</p>
+                    <div class="totp-disable-row">
+                        <input type="text" name="totp_code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required class="totp-input">
+                        <button type="submit" class="btn btn-outline btn-danger">Disable 2FA</button>
+                    </div>
+                </form>
+                {% else %}
+                <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary">Enable 2FA</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h2>Preferences</h2>
+            <div class="settings-card">
+                <div class="setting-row">
+                    <label>Auto-connect Dynamic Tunnel on startup</label>
+                    <label class="switch">
+                        <input type="checkbox" id="pref-vpn-auto" {% if user_state.vpn_enabled %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <label>Auto-enable Speed Sharing</label>
+                    <label class="switch">
+                        <input type="checkbox" id="prefiresdn-auto" {% if user_state.speed_sharing_enabled %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <label>Always-on Security Protection</label>
+                    <label class="switch">
+                        <input type="checkbox" id="pref-security-auto" {% if user_state.security_enabled %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <label>Notifications</label>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        {% if current_user.has_active_subscription() %}
+        <div class="settings-section">
+            <h2>Subscription Management</h2>
+            <div class="settings-card">
+                <div class="setting-row">
+                    <label>Cancel your FireSDN subscription</label>
+                    <a href="{{ url_for('cancel_subscription') }}" class="btn btn-outline">Cancel Plan</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="settings-section danger-zone">
+            <h2>Danger Zone</h2>
+            <div class="settings-card">
+                <p>Permanently delete your account and all data.</p>
+                <button class="btn btn-danger" id="delete-account-btn">Delete Account</button>
+            </div>
+        </div>
+
+        <script>
+        const prefToggles = ['pref-vpn-auto', 'prefiresdn-auto', 'pref-security-auto'];
+        prefToggles.forEach(id => {
+            document.getElementById(id).addEventListener('change', async function() {
+                const key = id === 'pref-vpn-auto' ? 'vpn_enabled' : 
+                          id === 'prefiresdn-auto' ? 'speed_sharing_enabled' : 'security_enabled';
+                try {
+                    await fetch('/api/settings/update', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({[key]: this.checked})
+                    });
+                } catch (e) { console.error('Failed to update setting'); }
+            });
+        });
+
+        document.getElementById('delete-account-btn').addEventListener('click', async function() {
+            if (confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
+                try {
+                    const response = await fetch('/api/account/delete', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'}
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                } catch (error) {
+                    alert('An error occurred. Please try again.');
+                }
+            }
+        });
+        </script>
+    </main>
+</div>
+{% endblock %}

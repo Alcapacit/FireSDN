@@ -1,0 +1,32 @@
+{
+  "client": {
+    "auto_start": true,
+    "background_mode": true,
+    "log_level": "info"
+  },
+
+  "vpn": {
+    "enabled": true,
+    "kill_switch": true,
+    "reconnect_on_drop": true,
+    "preferred_protocol": "udp"
+  },
+
+  "routing": {
+    "mode": "adaptive",
+    "allow_cellular_switching": true,
+    "allow_wifi_switching": true
+  },
+
+  "speed_sharing": {
+    "enabled": false,
+    "max_shared_bandwidth_percent": 20,
+    "share_only_when_idle": true,
+    "trusted_peers_only": true
+  },
+
+  "battery": {
+    "low_power_mode_threshold_percent": 20,
+    "reduce_metrics_sampling": true
+  }
+}

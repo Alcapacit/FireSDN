@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Phone - FireSDN{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="FireSDN" class="auth-logo">
+        <h2>Verify Phone</h2>
+        <p>A verification code has been sent to {{ phone }}</p>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="otp">Verification Code</label>
+                <input type="text" id="otp" name="otp" required placeholder="Enter 6-digit code" maxlength="6">
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Verify & Continue</button>
+        </form>
+        
+        <p class="auth-switch">Didn't get a code? <a href="{{ url_for('signup') }}">Try again</a></p>
+    </div>
+</div>
+{% endblock %}

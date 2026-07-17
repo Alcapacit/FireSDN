@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}FireSDN{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="FireSDN Logo" class="hero-logo">
+        <h1>FireSDN</h1>
+        <p class="hero-subtitle">Power up your network.</p>
+        <div class="hero-features">
+            <div class="feature">
+                <h3>IoT</h3>
+                <p>Connects devices through IoT network and scans IP packets when your device passes VM networks</p>
+            </div>
+            <div class="feature">
+                <h3>Speed Sharing</h3>
+                <p>Share your special routing with families and friends</p>
+            </div>
+            <div class="feature">
+                <h3>Subscription</h3>
+                <p>$5/month for FireSDN Plus</p>
+            </div>
+        </div>
+        <div class="hero-cta">
+            <a href="{{ url_for('signup') }}" class="btn btn-primary btn-large">Subscribe to FireSDN Plus</a>
+            <p class="trial-info">Claim a 7 day trial to see if you like it or cancel.</p>
+        </div>
+    </div>
+</section>
+
+<section class="pricing">
+    <h2></h2>
+    <div class="price-card">
+        <h3>FireSDN Plus</h3>
+        <div class="price">$5<span>/month</span></div>
+        <ul class="features-list">
+            <li>Dynamic Tunnel Access to All Servers</li>
+            <li>Speed Sharing with Peers</li>
+            <li>Mesh Network Access</li>
+            <li>Priority Routing</li>
+            <li>Advanced Analytics</li>
+            <li>24/7 Support</li>
+        </ul>
+        <a href="{{ url_for('signup') }}" class="btn btn-primary btn-large btn-full">Check!</a>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+{% block title %}Network Discovery - FireSDN{% endblock %}
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('discovery_dashboard') }}" class="active">Discovery</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('cloud_dashboard') }}">FDrive</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('savings_dashboard') }}">Savings</a>
+            <a href="{{ url_for('domains_dashboard') }}">Domains</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+            <div>
+                <h1>Network Discovery</h1>
+                <p class="page-description">Scan your local network to find every device, open port, and running service. Block unknown or suspicious systems.</p>
+            </div>
+            <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                <select id="scan-depth" style="padding:9px 14px; border:1px solid #ddd; border-radius:8px; background:white; font-size:0.9rem;">
+                    <option value="ping">Quick Ping Scan (~10s)</option>
+                    <option value="port" selected>Port + Service Scan (~30s)</option>
+                    <option value="deep">Deep OS + Version Scan (~2min)</option>
+                </select>
+                <button class="btn btn-primary" id="scan-btn" onclick="startScan()">
+                    <i class="fas fa-radar mr-2"></i> Scan Network
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div id="stats-bar" style="display:none; display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+            <div class="stat-chip" id="stat-total"><i class="fas fa-server mr-1"></i> <span>0</span> Devices</div>
+            <div class="stat-chip online" id="stat-online"><i class="fas fa-circle mr-1" style="font-size:0.6rem;"></i> <span>0</span> Online</div>
+            <div class="stat-chip blocked" id="stat-blocked"><i class="fas fa-ban mr-1"></i> <span>0</span> Blocked</div>
+            <div class="stat-chip" id="stat-ports"><i class="fas fa-door-open mr-1"></i> <span>0</span> Open Ports</div>
+            <div class="stat-chip" style="margin-left:auto; color:#888; font-size:0.8rem;" id="stat-time"></div>
+        </div>
+
+        <!-- Scan Progress -->
+        <div id="scan-progress" style="display:none; background:#f8f9fa; border-radius:12px; padding:2rem; text-align:center; margin-bottom:1.5rem; border:1px solid #e0e0e0;">
+            <div class="scan-pulse">
+                <div class="pulse-ring"></div>
+                <div class="pulse-ring delay1"></div>
+                <div class="pulse-ring delay2"></div>
+                <i class="fas fa-broadcast-tower" style="font-size:2rem; color:#1a73e8; position:relative; z-index:1;"></i>
+            </div>
+            <p id="scan-status-msg" style="margin-top:1rem; font-weight:600; color:#1a73e8;">Initializing scan...</p>
+            <p id="scan-detail-msg" style="color:#888; font-size:0.85rem; margin:0;">Detecting network range...</p>
+            <div style="margin-top:1rem;">
+                <div style="background:#e0e0e0; height:6px; border-radius:3px; overflow:hidden; max-width:400px; margin:0 auto;">
+                    <div id="scan-progressbar" style="height:100%; width:0%; background:linear-gradient(90deg,#1a73e8,#34a853); transition:width 0.5s;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div id="filter-bar" style="display:none; margin-bottom:1rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+            <span style="color:#888; font-size:0.85rem;">Filter:</span>
+            <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+            <button class="filter-btn" onclick="setFilter('online', this)">Online</button>
+            <button class="filter-btn" onclick="setFilter('blocked', this)">Blocked</button>
+            <button class="filter-btn" onclick="setFilter('hasports', this)">Has Open Ports</button>
+            <input type="text" id="search-devices" placeholder="Search IP, hostname, MAC..." oninput="applyFilter()"
+                   style="margin-left:auto; padding:7px 12px; border:1px solid #ddd; border-radius:8px; width:220px; font-size:0.85rem;">
+        </div>
+
+        <!-- Device Grid -->
+        <div id="device-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:1rem;"></div>
+
+        <!-- Empty state -->
+        <div id="empty-state" style="text-align:center; padding:4rem 2rem; color:#aaa;">
+            <i class="fas fa-network-wired" style="font-size:3rem; margin-bottom:1rem; display:block;"></i>
+            <p style="font-size:1.1rem; font-weight:600; color:#888;">No scan results yet</p>
+            <p style="font-size:0.9rem;">Click "Scan Network" to discover all devices on your local network.</p>
+        </div>
+
+        <!-- Blocked List -->
+        <div id="blocked-panel" style="display:none; margin-top:2rem; background:#fff8f8; border:1px solid #ffcccc; border-radius:12px; padding:1.5rem;">
+            <h3 style="margin:0 0 1rem; color:#c62828;"><i class="fas fa-ban mr-2"></i>Blocked Devices</h3>
+            <div id="blocked-list"></div>
+        </div>
+    </main>
+</div>
+
+<style>
+.stat-chip {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.stat-chip.online { border-color: #a5d6a7; color: #2e7d32; background: #e8f5e9; }
+.stat-chip.blocked { border-color: #ffcdd2; color: #c62828; background: #ffebee; }
+
+.device-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 14px;
+    padding: 1.25rem;
+    transition: box-shadow 0.2s;
+    position: relative;
+}
+.device-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.device-card.blocked-card { border-color: #ffcdd2; background: #fff8f8; opacity: 0.85; }
+.device-card.unknown { border-left: 4px solid #ff9800; }
+
+.device-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+.device-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+}
+.status-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    display: inline-block; margin-right: 4px;
+}
+.status-dot.up { background: #34a853; }
+.status-dot.down { background: #aaa; }
+.status-dot.blocked { background: #e53935; }
+
+.port-tag {
+    display: inline-block; font-size: 0.7rem; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px; margin: 2px;
+    background: #e8f0fe; color: #1967d2;
+}
+.port-tag.danger { background: #fce8e6; color: #c62828; }
+.port-tag.warn { background: #fef7e0; color: #e65100; }
+
+.scan-pulse { position: relative; width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+.pulse-ring {
+    position: absolute; width: 80px; height: 80px; border-radius: 50%;
+    border: 2px solid #1a73e8; opacity: 0.6;
+    animation: pulse-anim 2s ease-out infinite;
+}
+.pulse-ring.delay1 { animation-delay: 0.7s; }
+.pulse-ring.delay2 { animation-delay: 1.4s; }
+@keyframes pulse-anim {
+    0% { transform: scale(0.4); opacity: 0.8; }
+    100% { transform: scale(1.8); opacity: 0; }
+}
+
+.filter-btn {
+    background: white; border: 1px solid #ddd; border-radius: 100px;
+    padding: 5px 14px; font-size: 0.82rem; cursor: pointer; color: #555;
+    transition: all 0.15s;
+}
+.filter-btn.active, .filter-btn:hover { background: #1a73e8; color: white; border-color: #1a73e8; }
+
+.device-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+.btn-block { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; border-radius: 8px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+.btn-block:hover { background: #ffcdd2; }
+.btn-unblock { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 8px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+.btn-scan-single { background: #e8f0fe; color: #1a73e8; border: 1px solid #c5d9f7; border-radius: 8px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+</style>
+
+<script>
+let allDevices = [];
+let blockedIPs = new Set();
+let currentFilter = 'all';
+let lastScanTime = null;
+
+const RISKY_PORTS = [21, 23, 25, 69, 111, 135, 139, 161, 443, 445, 1433, 1521, 3306, 3389, 4444, 5900, 8080, 9200, 27017];
+const WARN_PORTS = [22, 80, 8443, 8888, 9090, 5432];
+
+function getDeviceIcon(device) {
+    const h = (device.hostname || '').toLowerCase();
+    const ports = (device.ports || []).map(p => p.port);
+    if (ports.includes(80) || ports.includes(443)) return { icon: 'fa-globe', bg: '#e8f0fe', color: '#1a73e8' };
+    if (ports.includes(3389)) return { icon: 'fa-windows', bg: '#e3f2fd', color: '#1565c0' };
+    if (ports.includes(22)) return { icon: 'fa-terminal', bg: '#f3e5f5', color: '#7b1fa2' };
+    if (ports.includes(548) || ports.includes(445)) return { icon: 'fa-folder-open', bg: '#fff3e0', color: '#e65100' };
+    if (h.includes('router') || h.includes('gateway') || h.includes('gw')) return { icon: 'fa-router', bg: '#e0f2f1', color: '#00695c' };
+    if (h.includes('phone') || h.includes('iphone') || h.includes('android')) return { icon: 'fa-mobile-alt', bg: '#e8f5e9', color: '#2e7d32' };
+    if (h.includes('printer') || ports.includes(9100)) return { icon: 'fa-print', bg: '#fce4ec', color: '#880e4f' };
+    if (h.includes('cam') || h.includes('camera')) return { icon: 'fa-camera', bg: '#ede7f6', color: '#4527a0' };
+    return { icon: 'fa-server', bg: '#f5f5f5', color: '#607d8b' };
+}
+
+function portRisk(port) {
+    if (RISKY_PORTS.includes(port)) return 'danger';
+    if (WARN_PORTS.includes(port)) return 'warn';
+    return '';
+}
+
+function renderDevices(devices) {
+    const grid = document.getElementById('device-grid');
+    const empty = document.getElementById('empty-state');
+    const filterBar = document.getElementById('filter-bar');
+
+    const searchTerm = (document.getElementById('search-devices')?.value || '').toLowerCase();
+
+    let filtered = devices.filter(d => {
+        if (currentFilter === 'online' && !d.up) return false;
+        if (currentFilter === 'blocked' && !blockedIPs.has(d.ip)) return false;
+        if (currentFilter === 'hasports' && (!d.ports || d.ports.length === 0)) return false;
+        if (searchTerm && !d.ip.includes(searchTerm) && !(d.hostname||'').toLowerCase().includes(searchTerm) && !(d.mac||'').toLowerCase().includes(searchTerm)) return false;
+        return true;
+    });
+
+    if (filtered.length === 0 && devices.length > 0) {
+        grid.innerHTML = '<p style="color:#aaa; padding:2rem; text-align:center; grid-column:1/-1;">No devices match this filter.</p>';
+        empty.style.display = 'none';
+        filterBar.style.display = 'flex';
+        return;
+    }
+
+    if (devices.length === 0) {
+        empty.style.display = 'block';
+        grid.innerHTML = '';
+        filterBar.style.display = 'none';
+        return;
+    }
+
+    empty.style.display = 'none';
+    filterBar.style.display = 'flex';
+
+    const isBlocked = ip => blockedIPs.has(ip);
+    const isUnknown = d => !d.hostname && (!d.vendor || d.vendor === 'Unknown');
+
+    grid.innerHTML = filtered.map(d => {
+        const icon = getDeviceIcon(d);
+        const blocked = isBlocked(d.ip);
+        const unknown = isUnknown(d);
+        const ports = d.ports || [];
+
+        return `
+        <div class="device-card ${blocked ? 'blocked-card' : ''} ${unknown && d.up ? 'unknown' : ''}" id="card-${d.ip.replace(/\./g,'-')}">
+            <div class="device-header">
+                <div style="display:flex; align-items:center; gap:0.75rem; min-width:0; flex:1;">
+                    <div class="device-icon" style="background:${icon.bg}; color:${icon.color};">
+                        <i class="fas ${icon.icon}"></i>
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="font-weight:700; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${d.hostname || 'Unknown Host'}
+                        </div>
+                        <div style="font-size:0.78rem; color:#888;">${d.ip} ${d.mac ? '· ' + d.mac : ''}</div>
+                    </div>
+                </div>
+                <div style="flex-shrink:0; text-align:right; margin-left:0.5rem;">
+                    <div style="font-size:0.8rem;">
+                        <span class="status-dot ${blocked ? 'blocked' : (d.up ? 'up' : 'down')}"></span>
+                        ${blocked ? 'Blocked' : (d.up ? 'Online' : 'Offline')}
+                    </div>
+                    ${d.os ? `<div style="font-size:0.72rem; color:#aaa; margin-top:2px;">${d.os}</div>` : ''}
+                </div>
+            </div>
+
+            ${d.vendor ? `<div style="font-size:0.78rem; color:#666; margin-bottom:0.5rem;"><i class="fas fa-microchip mr-1" style="color:#aaa;"></i>${d.vendor}</div>` : ''}
+
+            ${ports.length > 0 ? `
+            <div style="margin-bottom:0.5rem;">
+                <div style="font-size:0.78rem; color:#888; margin-bottom:4px;">${ports.length} open port${ports.length !== 1 ? 's' : ''}:</div>
+                <div>${ports.map(p => `<span class="port-tag ${portRisk(p.port)}" title="${p.service || ''} ${p.version || ''}">${p.port}${p.service ? '/' + p.service : ''}</span>`).join('')}</div>
+            </div>` : `<div style="font-size:0.78rem; color:#ccc; margin-bottom:0.5rem;">No open ports detected</div>`}
+
+            ${unknown && d.up ? `<div style="background:#fff8e1; border-radius:6px; padding:5px 10px; font-size:0.78rem; color:#e65100; margin-bottom:0.5rem;"><i class="fas fa-exclamation-triangle mr-1"></i> Unknown device — review before trusting</div>` : ''}
+
+            <div class="device-actions">
+                ${blocked
+                    ? `<button class="btn-unblock" onclick="unblockDevice('${d.ip}')"><i class="fas fa-check mr-1"></i>Unblock</button>`
+                    : `<button class="btn-block" onclick="blockDevice('${d.ip}', '${(d.hostname||'').replace(/'/g,'\\&apos;')}')"><i class="fas fa-ban mr-1"></i>Block</button>`
+                }
+                <button class="btn-scan-single" onclick="scanSingle('${d.ip}')"><i class="fas fa-search mr-1"></i>Deep Scan</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    // Update stats
+    const totalOpen = devices.reduce((s, d) => s + (d.ports||[]).length, 0);
+    document.getElementById('stat-total').querySelector('span').textContent = devices.length;
+    document.getElementById('stat-online').querySelector('span').textContent = devices.filter(d=>d.up).length;
+    document.getElementById('stat-blocked').querySelector('span').textContent = blockedIPs.size;
+    document.getElementById('stat-ports').querySelector('span').textContent = totalOpen;
+    document.getElementById('stats-bar').style.display = 'flex';
+    if (lastScanTime) document.getElementById('stat-time').textContent = 'Last scan: ' + lastScanTime;
+}
+
+function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderDevices(allDevices);
+}
+
+function applyFilter() { renderDevices(allDevices); }
+
+async function startScan() {
+    const depth = document.getElementById('scan-depth').value;
+    const btn = document.getElementById('scan-btn');
+    const progress = document.getElementById('scan-progress');
+    const grid = document.getElementById('device-grid');
+    const empty = document.getElementById('empty-state');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scanning...';
+    progress.style.display = 'block';
+    empty.style.display = 'none';
+    grid.innerHTML = '';
+
+    const messages = [
+        ['Detecting local network range...', 10],
+        ['Sending ARP probes...', 25],
+        ['Pinging all hosts...', 40],
+        ['Scanning open ports...', 60],
+        ['Fingerprinting services...', 75],
+        ['Detecting OS signatures...', 88],
+        ['Processing results...', 95],
+    ];
+
+    let mi = 0;
+    const msgInterval = setInterval(() => {
+        if (mi < messages.length) {
+            document.getElementById('scan-status-msg').textContent = messages[mi][0];
+            document.getElementById('scan-progressbar').style.width = messages[mi][1] + '%';
+            mi++;
+        }
+    }, depth === 'deep' ? 15000 : (depth === 'port' ? 5000 : 1500));
+
+    try {
+        const resp = await fetch('/api/discovery/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ depth })
+        });
+        const data = await resp.json();
+        clearInterval(msgInterval);
+        progress.style.display = 'none';
+        document.getElementById('scan-progressbar').style.width = '100%';
+
+        if (data.success) {
+            allDevices = data.devices;
+            // Restore blocked state
+            blockedIPs = new Set(data.blocked_ips || []);
+            lastScanTime = new Date().toLocaleTimeString();
+            renderDevices(allDevices);
+            updateBlockedPanel();
+        } else {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:2rem; color:#c62828; background:#ffebee; border-radius:12px;">
+                <i class="fas fa-exclamation-circle" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>
+                <strong>Scan Failed:</strong> ${data.error || 'Unknown error'}
+            </div>`;
+        }
+    } catch (e) {
+        clearInterval(msgInterval);
+        progress.style.display = 'none';
+        grid.innerHTML = `<div style="grid-column:1/-1; padding:2rem; color:#c62828; text-align:center;">Network error: ${e.message}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-radar mr-2"></i> Scan Network';
+    }
+}
+
+async function scanSingle(ip) {
+    const cardId = 'card-' + ip.replace(/\./g, '-');
+    const card = document.getElementById(cardId);
+    if (card) {
+        card.style.opacity = '0.6';
+        card.style.pointerEvents = 'none';
+    }
+
+    try {
+        const resp = await fetch('/api/discovery/scan-single', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip })
+        });
+        const data = await resp.json();
+        if (data.success && data.device) {
+            const idx = allDevices.findIndex(d => d.ip === ip);
+            if (idx !== -1) allDevices[idx] = data.device;
+            else allDevices.push(data.device);
+            renderDevices(allDevices);
+        } else {
+            alert('Deep scan failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function blockDevice(ip, hostname) {
+    const label = hostname || ip;
+    if (!confirm(`Block ${label} (${ip})?\n\nThis will attempt to block outbound connections to this device from this server.`)) return;
+
+    try {
+        const resp = await fetch('/api/discovery/block', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip })
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            blockedIPs.add(ip);
+            renderDevices(allDevices);
+            updateBlockedPanel();
+        } else {
+            alert('Block failed: ' + (data.error || 'Could not block device'));
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function unblockDevice(ip) {
+    try {
+        const resp = await fetch('/api/discovery/unblock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            blockedIPs.delete(ip);
+            renderDevices(allDevices);
+            updateBlockedPanel();
+        } else {
+            alert('Unblock failed: ' + (data.error || 'Unknown'));
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+function updateBlockedPanel() {
+    const panel = document.getElementById('blocked-panel');
+    const list = document.getElementById('blocked-list');
+    if (blockedIPs.size === 0) {
+        panel.style.display = 'none';
+        return;
+    }
+    panel.style.display = 'block';
+    const items = [...blockedIPs].map(ip => {
+        const dev = allDevices.find(d => d.ip === ip);
+        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0; border-bottom:1px solid #ffcccc;">
+            <div>
+                <strong>${dev?.hostname || ip}</strong>
+                <span style="color:#888; font-size:0.8rem; margin-left:0.5rem;">${ip}</span>
+                ${dev?.mac ? `<span style="color:#aaa; font-size:0.75rem; margin-left:0.5rem;">${dev.mac}</span>` : ''}
+            </div>
+            <button class="btn-unblock" onclick="unblockDevice('${ip}')">Unblock</button>
+        </div>`;
+    });
+    list.innerHTML = items.join('');
+}
+
+// Load existing blocked IPs on page load
+fetch('/api/discovery/blocked').then(r => r.json()).then(d => {
+    if (d.blocked_ips) blockedIPs = new Set(d.blocked_ips);
+});
+</script>
+{% endblock %}

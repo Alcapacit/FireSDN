@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "FireSDN Extension",
+  "version": "1.0.0",
+  "description": "Protects your privacy and optimizes your network speed using FireSDN Mesh Technology.",
+  "permissions": ["storage", "webRequest", "proxy"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

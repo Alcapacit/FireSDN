@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">FDrive</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}" class="active">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+    
+    <main class="dashboard-content">
+        <h1>Network Analytics</h1>
+        
+        {% if user_state.route_optimization_enabled %}
+        <div class="optimization-banner">
+            <span class="opt-icon"></span>
+            <span>Routing is enabled and any added analytics will appear here.</span>
+        </div>
+        {% endif %}
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Latency</h3>
+                <div class="metric-value">{{ metrics.get('latency_ms', 0) }}<span class="unit">ms</span></div>
+                {% if user_state.route_optimization_enabled %}
+                <span class="optimized-badge">Optimized</span>
+                {% endif %}
+            </div>
+            <div class="metric-card">
+                <h3>Jitter</h3>
+                <div class="metric-value">{{ metrics.get('jitter_ms', 0) }}<span class="unit">ms</span></div>
+            </div>
+            <div class="metric-card">
+                <h3>Packet Loss</h3>
+                <div class="metric-value">{{ metrics.get('packet_loss_percent', 0) }}<span class="unit">%</span></div>
+            </div>
+            <div class="metric-card">
+                <h3>Signal Strength</h3>
+                <div class="metric-value">{{ metrics.get('signal_strength', 0) }}<span class="unit">dBm</span></div>
+            </div>
+        </div>
+        
+        <div class="bandwidth-section">
+            <h2>Bandwidth</h2>
+            <div class="bandwidth-bars">
+                <div class="bandwidth-bar">
+                    <label>Download</label>
+                    <div class="bar-container">
+                        <div class="bar download" style="width: {{ (metrics.get('download_mbps', 0) / 100 * 100)|int }}%"></div>
+                    </div>
+                    <span>{{ metrics.get('download_mbps', 0) }} Mbps</span>
+                </div>
+                <div class="bandwidth-bar">
+                    <label>Upload</label>
+                    <div class="bar-container">
+                        <div class="bar upload" style="width: {{ (metrics.get('upload_mbps', 0) / 100 * 100)|int }}%"></div>
+                    </div>
+                    <span>{{ metrics.get('upload_mbps', 0) }} Mbps</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="network-info-section">
+            <h2>Network Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Network Type</span>
+                    <span class="value">{{ metrics.get('network_type', 'Unknown') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Signal Strength</span>
+                    <span class="value">{{ metrics.get('signal_strength', 0) }} dBm</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Connection Quality</span>
+                    <span class="value quality-good">{% if metrics.get('latency_ms', 100) < 50 %}Excellent{% elif metrics.get('latency_ms', 100) < 100 %}Good{% else %}Fair{% endif %}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="history-section">
+            <h2>Recent History</h2>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Latency (ms)</th>
+                        <th>Download (Mbps)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in history %}
+                    <tr>
+                        <td>{{ entry.timestamp }}</td>
+                        <td>{{ entry.latency_ms }}</td>
+                        <td>{{ entry.download_mbps }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3">No history data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

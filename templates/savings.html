@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}Savings - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}>Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('discovery_dashboard') }}">Discovery</a>
+            <a href="{{ url_for('iot_dashboard') }}" {% if request.endpoint == 'iot_dashboard' %}class="active"{% endif %}>Smart Home</a>
+            <a href="{{ url_for('cloud_dashboard') }}" {% if request.endpoint == 'cloud_dashboard' %}class="active"{% endif %}>FDrive</a>
+            <a href="{{ url_for('password_manager_dashboard') }}" {% if request.endpoint == 'password_manager_dashboard' %}class="active"{% endif %}>Passwords</a>
+            <a href="{{ url_for('savings_dashboard') }}" class="active">Savings</a>
+            <a href="{{ url_for('domains_dashboard') }}" {% if request.endpoint == 'domains_dashboard' %}class="active"{% endif %}>Domains</a>
+            <a href="{{ url_for('account_dashboard') }}" {% if request.endpoint == 'account_dashboard' %}class="active"{% endif %}>Account</a>
+            <a href="{{ url_for('settings_dashboard') }}" {% if request.endpoint == 'settings_dashboard' %}class="active"{% endif %}>Settings</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <h1>Savings</h1>
+                <p class="page-description">Search any product and we scan across Amazon, eBay, Walmart, Google Shopping, and many more to find you the lowest price on the web.</p>
+            </div>
+        </div>
+
+        <div style="max-width:900px; margin:0 auto;">
+            <div style="background:#f8f9fa; padding:2rem; border-radius:12px; margin-bottom:2rem; border:1px solid #e0e0e0;">
+                <h3 style="margin:0 0 1rem;">Find the Best Price</h3>
+                <div style="display:flex; gap:10px; margin-top:0.5rem;">
+                    <input type="text" id="product-search" placeholder="e.g. iPhone 15, Nike Air Max, Sony WH-1000XM5, MacBook Pro..."
+                           style="flex:1; padding:12px 16px; border:1px solid #ddd; border-radius:8px; font-size:1rem;"
+                           onkeypress="if(event.key==='Enter') searchPrices()">
+                    <button class="btn btn-primary" id="search-btn" onclick="searchPrices()" style="padding:12px 28px; white-space:nowrap;">
+                        <span id="search-text">Search Prices</span>
+                        <span id="search-spinner" style="display:none;">Searching...</span>
+                    </button>
+                </div>
+                <div style="display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap;">
+                    <span style="color:#666; font-size:0.85rem;">Try:</span>
+                    <button onclick="quickSearch('AirPods Pro')" class="quick-tag">AirPods Pro</button>
+                    <button onclick="quickSearch('PlayStation 5')" class="quick-tag">PlayStation 5</button>
+                    <button onclick="quickSearch('iPad Air')" class="quick-tag">iPad Air</button>
+                    <button onclick="quickSearch('Samsung 4K TV')" class="quick-tag">Samsung 4K TV</button>
+                    <button onclick="quickSearch('Nike Air Force 1')" class="quick-tag">Nike Air Force 1</button>
+                </div>
+            </div>
+
+            <div id="results-container" style="display:none;">
+                <div id="loading-state" style="text-align:center; padding:3rem;">
+                    <div class="spinner" style="margin:0 auto 1rem;"></div>
+                    <p id="loading-msg" style="color:#666;">Scanning Amazon, eBay, Walmart, Google Shopping and more...</p>
+                </div>
+
+                <div id="results-content" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 id="results-title" style="margin:0;"></h3>
+                        <span id="results-count" style="color:#666; font-size:0.9rem;"></span>
+                    </div>
+
+                    <div id="best-deal" style="display:none; background:linear-gradient(135deg,#34a853,#1e8449); color:white; border-radius:12px; padding:1.5rem; margin-bottom:1.5rem;">
+                        <div style="font-size:0.85rem; opacity:0.9; margin-bottom:0.5rem;">BEST PRICE FOUND</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <div id="best-title" style="font-size:1.1rem; font-weight:600; margin-bottom:4px;"></div>
+                                <div id="best-store" style="opacity:0.85; font-size:0.9rem;"></div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div id="best-price" style="font-size:2rem; font-weight:bold;"></div>
+                                <a id="best-link" href="#" target="_blank" style="color:white; font-size:0.9rem; text-decoration:underline;">View Deal</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="results-list"></div>
+                </div>
+
+                <div id="error-state" style="display:none; background:#fff3cd; padding:1.5rem; border-radius:10px; border-left:4px solid #ffc107;">
+                    <strong>Search Note:</strong>
+                    <p id="error-msg" style="margin:0.5rem 0 0;"></p>
+                    <div id="fallback-links" style="display:none; margin-top:1rem;">
+                        <p style="font-weight:600; margin-bottom:0.5rem; font-size:0.9rem;">Search directly on these stores:</p>
+                        <div id="fallback-link-list" style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.spinner {
+    width: 36px; height: 36px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #1a73e8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.quick-tag {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.2s;
+}
+.quick-tag:hover { background: #1a73e8; color: white; border-color: #1a73e8; }
+
+.price-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.2s;
+}
+.price-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.store-logo {
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-right: 12px;
+    white-space: nowrap;
+}
+.store-amazon { background: #FF9900; color: white; }
+.store-ebay { background: #e53238; color: white; }
+.store-walmart { background: #0071dc; color: white; }
+.store-google { background: #4285f4; color: white; }
+.store-best-buy { background: #003f8a; color: white; }
+.store-target { background: #cc0000; color: white; }
+.store-newegg { background: #f90; color: black; }
+.store-other { background: #607d8b; color: white; }
+</style>
+
+<script>
+function quickSearch(term) {
+    document.getElementById('product-search').value = term;
+    searchPrices();
+}
+
+async function searchPrices() {
+    const query = document.getElementById('product-search').value.trim();
+    if (!query) {
+        alert('Please enter a product to search for');
+        return;
+    }
+
+    const btn = document.getElementById('search-btn');
+    const searchText = document.getElementById('search-text');
+    const spinner = document.getElementById('search-spinner');
+    const container = document.getElementById('results-container');
+    const loading = document.getElementById('loading-state');
+    const content = document.getElementById('results-content');
+    const error = document.getElementById('error-state');
+
+    btn.disabled = true;
+    searchText.style.display = 'none';
+    spinner.style.display = 'inline';
+    container.style.display = 'block';
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    error.style.display = 'none';
+
+    const messages = [
+        'Scanning Amazon...',
+        'Checking eBay listings...',
+        'Searching Walmart...',
+        'Querying Google Shopping...',
+        'Checking Best Buy and Target...',
+        'Comparing all prices...'
+    ];
+    let mi = 0;
+    const msgInterval = setInterval(() => {
+        document.getElementById('loading-msg').textContent = messages[mi % messages.length];
+        mi++;
+    }, 1200);
+
+    try {
+        const response = await fetch('/api/savings/search-prices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
+
+        const data = await response.json();
+        clearInterval(msgInterval);
+        loading.style.display = 'none';
+
+        if (data.success && data.results && data.results.length > 0) {
+            document.getElementById('results-title').textContent = `Results for "${query}"`;
+            document.getElementById('results-count').textContent = `${data.results.length} live results found`;
+
+            if (data.best_deal) {
+                const bd = data.best_deal;
+                document.getElementById('best-deal').style.display = 'block';
+                document.getElementById('best-title').textContent = bd.title;
+                document.getElementById('best-store').textContent = bd.store;
+                document.getElementById('best-price').textContent = bd.price;
+                document.getElementById('best-link').href = bd.url;
+            }
+
+            const list = document.getElementById('results-list');
+            list.innerHTML = data.results.map((item, i) => {
+                const storeClass = getStoreClass(item.store);
+                return `
+                <div class="price-card">
+                    <div style="display:flex; align-items:center; flex:1; min-width:0;">
+                        <span class="store-logo ${storeClass}">${item.store}</span>
+                        <div style="min-width:0;">
+                            <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:400px;">${item.title}</div>
+                            ${item.condition ? `<div style="color:#888; font-size:0.8rem;">${item.condition}</div>` : ''}
+                            ${item.shipping ? `<div style="color:#34a853; font-size:0.8rem;">${item.shipping}</div>` : ''}
+                        </div>
+                    </div>
+                    <div style="text-align:right; margin-left:1rem; flex-shrink:0;">
+                        <div style="font-size:1.3rem; font-weight:700; color:${i === 0 ? '#34a853' : '#333'};">${item.price}</div>
+                        ${i === 0 ? '<div style="color:#34a853; font-size:0.75rem; font-weight:600;">CHEAPEST</div>' : ''}
+                        <a href="${item.url}" target="_blank" class="btn btn-small btn-outline" style="font-size:0.8rem; padding:4px 12px; margin-top:4px; display:inline-block;">View</a>
+                    </div>
+                </div>`;
+            }).join('');
+
+            if (data.search_links && data.search_links.length > 0) {
+                list.innerHTML += `
+                <div style="margin-top:1.5rem; padding:1rem; background:#f8f9fa; border-radius:10px; border:1px solid #e0e0e0;">
+                    <p style="font-weight:600; margin:0 0 0.75rem; font-size:0.9rem;"><i class="fas fa-external-link-alt mr-1"></i> Also search on:</p>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                        ${data.search_links.map(sl => `<a href="${sl.url}" target="_blank" class="quick-tag" style="text-decoration:none;">${sl.store}</a>`).join('')}
+                    </div>
+                </div>`;
+            }
+
+            content.style.display = 'block';
+        } else {
+            error.style.display = 'block';
+            document.getElementById('error-msg').textContent = data.message || `No results found for "${query}". Try a more general search term.`;
+            if (data.search_links && data.search_links.length > 0) {
+                document.getElementById('fallback-links').style.display = 'block';
+                document.getElementById('fallback-link-list').innerHTML = data.search_links.map(sl =>
+                    `<a href="${sl.url}" target="_blank" class="quick-tag" style="text-decoration:none;">${sl.store}</a>`
+                ).join('');
+            }
+        }
+    } catch (e) {
+        clearInterval(msgInterval);
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        document.getElementById('error-msg').textContent = 'Search failed: ' + e.message + '. Please try again.';
+    } finally {
+        btn.disabled = false;
+        searchText.style.display = 'inline';
+        spinner.style.display = 'none';
+    }
+}
+
+function getStoreClass(store) {
+    const s = store.toLowerCase();
+    if (s.includes('amazon')) return 'store-amazon';
+    if (s.includes('ebay')) return 'store-ebay';
+    if (s.includes('walmart')) return 'store-walmart';
+    if (s.includes('google')) return 'store-google';
+    if (s.includes('best buy') || s.includes('bestbuy')) return 'store-best-buy';
+    if (s.includes('target')) return 'store-target';
+    if (s.includes('newegg')) return 'store-newegg';
+    return 'store-other';
+}
+</script>
+{% endblock %}

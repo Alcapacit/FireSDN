@@ -1,0 +1,34 @@
+{
+  "nodes": [
+    {
+      "node_id": "form-node-eu-01",
+      "region": "eu-west",
+      "country": "DE",
+      "ip": "203.0.113.10",
+      "port": 51820,
+      "protocols": ["udp", "tcp"],
+      "capacity_mbps": 10000,
+      "status": "active",
+      "supports_ai_routing": true,
+      "supports_speed_sharing": true
+    },
+    {
+      "node_id": "form-node-af-01",
+      "region": "af-east",
+      "country": "KE",
+      "ip": "203.0.113.20",
+      "port": 51820,
+      "protocols": ["udp"],
+      "capacity_mbps": 3000,
+      "status": "active",
+      "supports_ai_routing": true,
+      "supports_speed_sharing": false
+    }
+  ],
+
+  "selection_policy": {
+    "prefer_same_region": true,
+    "max_latency_ms": 180,
+    "failover_on_packet_loss_percent": 5
+  }
+}

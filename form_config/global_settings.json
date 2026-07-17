@@ -1,0 +1,40 @@
+{
+  "project_name": "FireSDN",
+  "version": "0.1.0",
+  "environment": "production",
+
+  "network": {
+    "default_protocol": "udp",
+    "fallback_protocol": "tcp",
+    "mtu": 1420,
+    "dns": {
+      "primary": "1.1.1.1",
+      "secondary": "8.8.8.8",
+      "use_dns_over_https": true,
+      "use_dns_over_tls": true
+    }
+  },
+
+  "routing": {
+    "auto_optimize": true,
+    "route_refresh_interval_seconds": 15,
+    "latency_weight": 0.5,
+    "packet_loss_weight": 0.3,
+    "bandwidth_weight": 0.2,
+    "allow_mid_session_switch": true
+  },
+
+  "security": {
+    "encryption": "chacha20-poly1305",
+    "key_rotation_minutes": 30,
+    "block_suspicious_routes": true,
+    "mitm_detection": true,
+    "firewall_mode": "adaptive"
+  },
+
+  "telemetry": {
+    "enabled": true,
+    "anonymous": true,
+    "upload_interval_minutes": 10
+  }
+}

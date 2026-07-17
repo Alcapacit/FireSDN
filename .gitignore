@@ -1,0 +1,75 @@
+# ========================
+# 🔧 Gradle / Android
+# ========================
+.gradle/
+build/
+**/build/
+local.properties
+captures/
+
+# APK / Bundles / Dex
+*.apk
+*.aab
+*.dex
+
+# Native build
+.cxx/
+.externalNativeBuild/
+
+# ========================
+# 🧠 IDE / Editor
+# ========================
+.idea/
+*.iml
+.vscode/
+
+# ========================
+# 🧹 Logs & temp
+# ========================
+*.log
+*.tmp
+*.swp
+
+# ========================
+# 🔐 Secrets / Keys
+# ========================
+*.jks
+*.keystore
+.env
+.env.*
+
+# ========================
+# 🌐 Networking / FireSDN specific
+# ========================
+# CachePacket / runtime data
+cache/
+tmp/
+sessions/
+*.cache
+
+# Dynamic tunnel data
+tunnels/
+connections/
+*.session
+
+# Logs from networking tools
+logs/
+network_logs/
+
+# ========================
+# 🐹 Go (if you're using backend)
+# ========================
+bin/
+pkg/
+*.test
+
+# ========================
+# 📦 Node (if any frontend tools exist)
+# ========================
+node_modules/
+
+# ========================
+# 🗂 OS junk
+# ========================
+.DS_Store
+Thumbs.db

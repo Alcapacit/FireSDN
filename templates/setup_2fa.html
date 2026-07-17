@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Setup Two-Factor Authentication - FireSDN{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h1>Setup Two-Factor Authentication</h1>
+        <p class="auth-description">Scan the QR code with your authenticator app, or manually enter the secret key.</p>
+        
+        <div class="qr-code-container">
+            <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="qr-code">
+        </div>
+        
+        <div class="secret-key-container">
+            <label>Secret Key (copy to your authenticator):</label>
+            <div class="secret-key-display">
+                <code id="secret-key">{{ secret }}</code>
+                <button type="button" class="btn btn-small btn-secondary" onclick="copySecret()">Copy</button>
+            </div>
+        </div>
+        
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="totp_code">Enter the 6-digit code from your app:</label>
+                <input type="text" id="totp_code" name="totp_code" pattern="[0-9]{6}" maxlength="6" required placeholder="000000" autocomplete="off">
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Verify and Enable 2FA</button>
+        </form>
+        
+        <a href="{{ url_for('settings_dashboard') }}" class="back-link">Cancel</a>
+    </div>
+</div>
+
+<style>
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+.qr-code {
+    max-width: 200px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+.secret-key-container {
+    margin-bottom: 1.5rem;
+}
+.secret-key-container label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+.secret-key-display {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--bg-tertiary);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+}
+.secret-key-display code {
+    flex: 1;
+    font-family: monospace;
+    font-size: 0.875rem;
+    word-break: break-all;
+}
+#totp_code {
+    text-align: center;
+    font-size: 1.5rem;
+    letter-spacing: 0.5rem;
+    font-weight: 600;
+}
+</style>
+
+<script>
+function copySecret() {
+    const secret = document.getElementById('secret-key').textContent;
+    navigator.clipboard.writeText(secret).then(() => {
+        alert('Secret key copied to clipboard!');
+    });
+}
+</script>
+{% endblock %}

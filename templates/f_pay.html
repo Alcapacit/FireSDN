@@ -1,0 +1,485 @@
+{% extends 'base.html' %}
+
+{% block title %}F-Pay{% endblock %}
+
+{% block content %}
+<div class="gpay-wrapper">
+    <div class="gpay-container">
+        <!-- Google Pay Style Header -->
+        <div class="gpay-header">
+            <div class="gpay-logo-container">
+                <img src="{{ url_for('static', filename='pay.png') }}" alt="FireSDN" class="gpay-brand-logo">
+                <span class="gpay-brand-name"></span>
+            </div>
+            <div class="gpay-user-profile">
+                <div class="gpay-avatar">{{ current_user.username[0] | upper }}</div>
+            </div>
+        </div>
+
+        <main class="gpay-main">
+            <!-- Payment Card Section -->
+            <div class="gpay-card-section">
+                <div class="gpay-payment-card">
+                    <div class="gpay-card-chip"></div>
+                    <div class="gpay-card-number" id="display-card-number">Your Registered Card {{ card_last4 if card_last4 else '' }}</div>
+                    <div class="gpay-card-details">
+                        <span class="gpay-card-holder">FireSDN</span>
+                        <img src="{{ url_for('static', filename='visa.png') }}" alt="Visa" class="gpay-card-network" id="display-card-brand">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="gpay-actions">
+                <button class="gpay-action-btn active" onclick="showSection('pay')">
+                    <div class="gpay-icon-circle"><i class="fas fa-arrow-up"></i></div>
+                    <span>Pay</span>
+                </button>
+                <button class="gpay-action-btn" onclick="showSection('history')">
+                    <div class="gpay-icon-circle"><i class="fas fa-history"></i></div>
+                    <span>Activity</span>
+                </button>
+                <button class="gpay-action-btn" onclick="showSection('cards')">
+                    <div class="gpay-icon-circle"><i class="fas fa-credit-card"></i></div>
+                    <span>Cards</span>
+                </button>
+            </div>
+
+    <div id="pay-section" class="gpay-section-content">
+        <form id="payment-form">
+            <div class="gpay-amount-input-wrapper">
+                <span class="gpay-currency">$</span>
+                <input type="number" id="amount" class="gpay-amount-input" placeholder="0.00" step="0.01" required>
+            </div>
+
+            <div class="gpay-card-container" style="border: 1px solid var(--gpay-border); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                <div id="card-element">
+                    <!-- Stripe Elements will be mounted here -->
+                </div>
+            </div>
+
+            <div id="biometric-status" class="gpay-biometric-prompt" style="display: none;">
+                <div class="gpay-fingerprint-icon" onclick="triggerBiometrics()">
+                    <i class="fas fa-fingerprint"></i>
+                </div>
+                <p>Verify identity to continue</p>
+            </div>
+
+            <div id="payment-errors" class="gpay-error-message"></div>
+
+            <button type="submit" id="submit-button" class="gpay-submit-btn">
+                Proceed with F-Pay
+            </button>
+        </form>
+    </div>
+
+            <!-- History Section -->
+            <div id="history-section" class="gpay-section-content" style="display: none;">
+                <h3 class="gpay-section-title">Recent activity</h3>
+                <div id="transaction-list" class="gpay-list">
+                    <p class="gpay-empty-text">No recent transactions</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+:root {
+    --gpay-blue: #1a73e8;
+    --gpay-bg: #ffffff;
+    --gpay-text: #3c4043;
+    --gpay-text-secondary: #5f6368;
+    --gpay-border: #dadce0;
+    --gpay-surface: #f8f9fa;
+}
+
+.gpay-wrapper {
+    background: var(--gpay-surface);
+    min-height: 100vh;
+    padding: 20px;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
+    color: var(--gpay-text);
+}
+
+.gpay-container {
+    max-width: 450px;
+    margin: 0 auto;
+    background: var(--gpay-bg);
+    border-radius: 28px;
+    box-shadow: 0 1px 3px rgba(60,64,67,0.3), 0 4px 8px rgba(60,64,67,0.15);
+    overflow: hidden;
+    min-height: 80vh;
+}
+
+.gpay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+}
+
+.gpay-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gpay-brand-logo {
+    height: 24px;
+    width: auto;
+}
+
+.gpay-brand-name {
+    font-size: 22px;
+    font-weight: 500;
+    color: #5f6368;
+}
+
+.gpay-avatar {
+    width: 32px;
+    height: 32px;
+    background: #e8f0fe;
+    color: var(--gpay-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+}
+
+.gpay-main {
+    padding: 24px;
+}
+
+/* Card Style */
+.gpay-card-section {
+    margin-bottom: 32px;
+}
+
+.gpay-payment-card {
+    background: linear-gradient(135deg, #1a73e8 0%, #174ea6 100%);
+    border-radius: 16px;
+    padding: 24px;
+    color: white;
+    aspect-ratio: 1.58 / 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(26,115,232,0.3);
+}
+
+.gpay-card-chip {
+    width: 40px;
+    height: 30px;
+    background: #ffd700;
+    border-radius: 4px;
+}
+
+.gpay-card-number {
+    font-size: 22px;
+    letter-spacing: 2px;
+}
+
+.gpay-card-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gpay-card-network {
+    height: 20px;
+}
+
+/* Actions */
+.gpay-actions {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 32px;
+}
+
+.gpay-action-btn {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--gpay-text-secondary);
+    transition: all 0.2s;
+}
+
+.gpay-action-btn.active {
+    color: var(--gpay-blue);
+}
+
+.gpay-icon-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--gpay-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.2s;
+}
+
+.gpay-action-btn.active .gpay-icon-circle {
+    background: #e8f0fe;
+    color: var(--gpay-blue);
+}
+
+/* Amount Input */
+.gpay-amount-input-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 32px 0;
+}
+
+.gpay-currency {
+    font-size: 40px;
+    font-weight: 500;
+}
+
+.gpay-amount-input {
+    border: none;
+    font-size: 64px;
+    font-weight: 400;
+    width: 200px;
+    text-align: center;
+    outline: none;
+    color: var(--gpay-text);
+}
+
+.gpay-input {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--gpay-border);
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.gpay-input:focus {
+    border-color: var(--gpay-blue);
+    border-width: 2px;
+    padding: 15px;
+}
+
+.gpay-row {
+    display: flex;
+    gap: 12px;
+}
+
+/* Biometrics */
+.gpay-biometric-prompt {
+    text-align: center;
+    margin: 24px 0;
+    padding: 24px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.gpay-fingerprint-icon {
+    font-size: 48px;
+    color: var(--gpay-blue);
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+
+.gpay-submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--gpay-blue);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: background 0.2s;
+}
+
+.gpay-submit-btn:hover {
+    background: #1765cc;
+}
+
+.gpay-error-message {
+    color: #d93025;
+    font-size: 14px;
+    margin-top: 12px;
+    text-align: center;
+}
+
+.gpay-section-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.gpay-empty-text {
+    color: var(--gpay-text-secondary);
+    text-align: center;
+    padding: 40px 0;
+}
+</style>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    const stripe = Stripe('{{ stripe_public_key or "pk_test_TYooMQauvdEDq54NiTphI7jx" }}');
+    const elements = stripe.elements();
+    
+    const card = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#3c4043',
+                fontFamily: 'Google Sans, Roboto, sans-serif',
+                '::placeholder': { color: '#5f6368' },
+            }
+        },
+        hidePostalCode: true
+    });
+    card.mount('#card-element');
+
+    function showSection(section) {
+        document.querySelectorAll('.gpay-section-content').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.gpay-action-btn').forEach(b => b.classList.remove('active'));
+        
+        const targetSection = document.getElementById(section + '-section');
+        if (targetSection) targetSection.style.display = 'block';
+        
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
+    }
+
+    const form = document.getElementById('payment-form');
+    let biometricsVerified = false;
+
+    async function triggerBiometrics() {
+        const prompt = document.getElementById('biometric-status');
+        const icon = prompt.querySelector('i');
+        const text = prompt.querySelector('p');
+        
+        prompt.style.display = 'block';
+        icon.style.color = '#1a73e8';
+        text.textContent = 'Authenticating via Device Security...';
+        
+        try {
+            if (!window.PublicKeyCredential) {
+                throw new Error("Biometrics not supported");
+            }
+
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+            
+            // Generate a random ID for the user to satisfy WebAuthn requirements in this context
+            const user_id = Uint8Array.from(window.btoa(Math.random().toString()), c => c.charCodeAt(0));
+
+            const options = {
+                publicKey: {
+                    challenge: challenge,
+                    rp: { name: "FireSDN", id: window.location.hostname },
+                    user: {
+                        id: user_id,
+                        name: "{{ current_user.email }}",
+                        displayName: "{{ current_user.username }}"
+                    },
+                    pubKeyCredParams: [{alg: -7, type: "public-key"}, {alg: -257, type: "public-key"}],
+                    authenticatorSelection: { 
+                        authenticatorAttachment: "platform",
+                        userVerification: "required"
+                    },
+                    timeout: 60000
+                }
+            };
+
+            const credential = await navigator.credentials.create(options);
+
+            if (credential) {
+                biometricsVerified = true;
+                text.textContent = 'Identity Verified';
+                text.style.color = '#34a853';
+                icon.style.color = '#34a853';
+                return true;
+            }
+        } catch (e) {
+            console.error("Biometric error:", e);
+            text.textContent = 'Verification failed. Please use your device PIN or Fingerprint.';
+            text.style.color = '#d93025';
+            icon.style.color = '#d93025';
+            
+            // Real security: we DO NOT set biometricsVerified = true here
+            // The user must actually succeed with the device prompt
+        }
+        return false;
+    }
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        const amount = document.getElementById('amount').value;
+        if (!amount || amount <= 0) {
+            document.getElementById('payment-errors').textContent = 'Enter a valid amount';
+            return;
+        }
+
+        const submitBtn = document.getElementById('submit-button');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        // 1. Create PaymentMethod using Stripe Elements (Secure)
+        const {paymentMethod, error} = await stripe.createPaymentMethod({
+            type: 'card',
+            card: card,
+        });
+
+        if (error) {
+            document.getElementById('payment-errors').textContent = error.message;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Proceed with F-Pay';
+            return;
+        }
+
+        // 2. Trigger Real Biometrics only AFTER card is validated
+        const verified = await triggerBiometrics();
+        if (!verified) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Proceed with F-Pay';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/f-pay/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    amount, 
+                    payment_method_id: paymentMethod.id
+                })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Payment successful!');
+                location.reload();
+            } else {
+                document.getElementById('payment-errors').textContent = result.error;
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Proceed with F-Pay';
+            }
+        } catch (err) {
+            document.getElementById('payment-errors').textContent = 'An error occurred';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Proceed with F-Pay';
+        }
+    });
+</script>
+{% endblock %}

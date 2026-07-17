@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}IP Protocol - FireSDN{% endblock %}
+
+{% block content %}
+<div class="ip-protocol">
+    <div class="google-header">
+        <h1>IP Protocol</h1>
+        <div class="status-badge">
+            <span class="pulse"></span>
+            Live Network Mapping
+        </div>
+    </div>
+
+    <div class="protocol-grid">
+        <div class="device-list-container shadow-sm">
+            <div class="list-header">
+                <h3>Detected Nodes</h3>
+                <button class="refresh-btn" onclick="refreshProtocol()"><i class="fas fa-sync-alt"></i></button>
+            </div>
+            <div class="protocol-table-wrapper">
+                <table class="protocol-table">
+                    <thead>
+                        <tr>
+                            <th>Device</th>
+                            <th>IP Address</th>
+                            <th>MAC Address</th>
+                            <th>Status</th>
+                            <th>Open Ports</th>
+                        </tr>
+                    </thead>
+                    <tbody id="protocol-body">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.ip-protocol {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.google-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.status-badge {
+    background: #e8f0fe;
+    color: #1967d2;
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pulse {
+    width: 8px;
+    height: 8px;
+    background: #34a853;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(52, 168, 83, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
+}
+
+.device-list-container {
+    background: #fff;
+    border-radius: 24px;
+    padding: 1.5rem;
+    border: 1px solid #dadce0;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.refresh-btn {
+    background: transparent;
+    border: none;
+    color: #5f6368;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: transform 0.3s;
+}
+
+.refresh-btn:hover { transform: rotate(180deg); }
+
+.protocol-table-wrapper {
+    overflow-x: auto;
+}
+
+.protocol-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.protocol-table th {
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    color: #5f6368;
+    font-weight: 500;
+}
+
+.protocol-table td {
+    padding: 1.2rem 1rem;
+    border-bottom: 1px solid #f8f9fa;
+    vertical-align: middle;
+}
+
+.port-tag {
+    background: #f1f3f4;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-right: 4px;
+    color: #3c4043;
+}
+
+.online-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #34a853;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+</style>
+
+<script>
+async function refreshProtocol() {
+    const body = document.getElementById('protocol-body');
+    body.innerHTML = '<tr><td colspan="5" class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i></td></tr>';
+    
+    try {
+        const res = await fetch('/api/iot/devices');
+        const data = await res.json();
+        
+        if (data.success) {
+            body.innerHTML = data.devices.map(dev => `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="fas ${dev.icon}" style="color: ${dev.color}"></i>
+                            <div>
+                                <div class="font-weight-bold">${dev.name}</div>
+                                <div class="small text-muted">${dev.type}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><code>${dev.ip}</code></td>
+                    <td><code>${dev.mac}</code></td>
+                    <td><span class="online-dot"></span> Online</td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-1">
+                            ${dev.ports.map(p => `<span class="port-tag" title="${p.service}">${p.port}</span>`).join('')}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        body.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to map network.</td></tr>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', refreshProtocol);
+</script>
+{% endblock %}

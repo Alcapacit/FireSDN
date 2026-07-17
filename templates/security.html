@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% block title %}Security - FireSDN{% endblock %}
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}" class="active">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+    
+    <main class="dashboard-content">
+        <h1>Security Settings</h1>
+        
+        <div class="security-status-card">
+            <div class="security-status {% if user_state.security_enabled %}protected{% else %}unprotected{% endif %}">
+                <div class="shield-icon">{% if user_state.security_enabled %}{% else %}▪︎{% endif %}</div>
+                <div class="status-text">
+                    <h2>{% if user_state.security_enabled %}Protected{% else %}Not Protected{% endif %}</h2>
+                    {% if user_state.security_enabled and user_state.protected_since %}
+                    <p>Protected since {{ user_state.protected_since[:10] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="security-toggle">
+                <label class="switch large">
+                    <input type="checkbox" id="security-toggle" {% if user_state.security_enabled %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="threats-summary">
+            <div class="threat-stat">
+                <div class="stat-value" id="threats-blocked">{{ user_state.threats_blocked or 0 }} + </div>
+                <div class="stat-label">Connections being scanned</div>
+            </div>
+            <div class="threat-stat">
+                <div class="stat-value status-active">Active</div>
+                <div class="stat-label">Protection Status</div>
+            </div>
+            <div class="threat-stat">
+                <div class="stat-value">AES-256</div>
+                <div class="stat-label">Encryption</div>
+            </div>
+        </div>
+        
+        <div class="protection-features">
+            <h2>Protection Features</h2>
+            <div class="features-grid-security">
+                <div class="protection-item">
+                    <div class="protection-icon">●</div>
+                    <div class="protection-info">
+                        <h3>Malware Protection</h3>
+                        <p>Blocks malicious software and downloads</p>
+                    </div>
+                    <div class="protection-status active">Active</div>
+                </div>
+                <div class="protection-item">
+                    <div class="protection-icon">●</div>
+                    <div class="protection-info">
+                        <h3>Phishing Protection</h3>
+                        <p>Protects against fake websites and scams</p>
+                    </div>
+                    <div class="protection-status active">Active</div>
+                </div>
+                <div class="protection-item">
+                    <div class="protection-icon">●</div>
+                    <div class="protection-info">
+                        <h3>DNS Leak Protection</h3>
+                        <p>Prevents DNS queries from leaking</p>
+                    </div>
+                    <div class="protection-status active">Active</div>
+                </div>
+                <div class="protection-item">
+                    <div class="protection-icon">●</div>
+                    <div class="protection-info">
+                        <h3>IP Leak Protection</h3>
+                        <p>Hides your real IP address</p>
+                    </div>
+                    <div class="protection-status active">Active</div>
+                </div>
+                <div class="protection-item">
+                    <div class="protection-icon">●</div>
+                    <div class="protection-info">
+                        <h3>Tracker Blocking</h3>
+                        <p>Blocks online trackers and cookies</p>
+                    </div>
+                    <div class="protection-status active">Active</div>
+                </div>
+                <div class="protection-item">
+                    <div class="protection-icon">●</div>
+                    <div class="protection-info">
+                        <h3>Ad Blocking</h3>
+                        <p>Removes intrusive advertisements</p>
+                    </div>
+                    <div class="protection-status active">Active</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="recent-threats">
+            <h2>Recent Threat Activity</h2>
+            <div class="threats-list" id="threats-list">
+                <div class="loading">Loading threat data...</div>
+            </div>
+        </div>
+        
+        <div class="security-info">
+            <h2>Offers</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Secure DNS</h3>
+                    <p>All DNS queries are encrypted and routed through FireSDN's secure servers.</p>
+                    <ul>
+                        <li>FireSDN Secure DNS 1</li>
+                        <li>FireSDN Secure DNS 2</li>
+                    </ul>
+                </div>
+                <div class="info-card">
+                    <h3>Encryption</h3>
+                    <p>All your traffic is encrypted with military-grade encryption.</p>
+                    <ul>
+                        <li>AES-256-GCM</li>
+                        <li>Perfect Forward Secrecy</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+document.getElementById('security-toggle').addEventListener('change', async function() {
+    const enabled = this.checked;
+    
+    try {
+        const response = await fetch('/api/security/toggle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ enabled })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            location.reload();
+        }
+    } catch (error) {
+        alert('Error toggling security: ' + error.message);
+        this.checked = !enabled;
+    }
+});
+
+async function loadThreats() {
+    try {
+        const response = await fetch('/api/security/status');
+        const data = await response.json();
+        
+        document.getElementById('threats-blocked').textContent = data.threats_blocked;
+        
+        const threatsList = document.getElementById('threats-list');
+        if (data.recent_threats && data.recent_threats.length > 0) {
+            threatsList.innerHTML = data.recent_threats.map(threat => `
+                <div class="threat-item ${threat.severity.toLowerCase()}">
+                    <div class="threat-type">${threat.type}</div>
+                    <div class="threat-details">
+                        <span class="threat-source">From: ${threat.source}</span>
+                        <span class="threat-severity ${threat.severity.toLowerCase()}">${threat.severity}</span>
+                    </div>
+                    <div class="threat-time">${new Date(threat.blocked_at).toLocaleString()}</div>
+                </div>
+            `).join('');
+        } else {
+            threatsList.innerHTML = '<p class="no-threats">No recent threats detected. Your connection is secure!</p>';
+        }
+    } catch (error) {
+        console.error('Error loading threats:', error);
+    }
+}
+
+loadThreats();
+setInterval(loadThreats, 30000);
+</script>
+{% endblock %}

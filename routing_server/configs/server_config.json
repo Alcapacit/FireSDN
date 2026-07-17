@@ -1,0 +1,7 @@
+{
+  "server_port": 9000,
+  "max_connections": 1000,
+  "firewall_enabled": true,
+  "routing_algorithm": "latency_min",
+  "ai_optimizer_enabled": true
+}

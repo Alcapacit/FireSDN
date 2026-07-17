@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}FLYNX Protocol - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('plugin_page') }}">Plugins</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('flynx_dashboard') }}" class="active">FLYNX Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="display-4 mb-0" style="color: #00f2ff; font-weight: 800; letter-spacing: -2px;">IP <span style="font-weight: 300; opacity: 0.7;">PROTOCOL</span></h1>
+                <p class="text-muted">High-fidelity mesh network discovery & port serialization engine.</p>
+            </div>
+            <div class="scan-status-badge">
+                <span class="badge bg-dark border border-info text-info p-2" id="protocol-ver">CORE: FLYNX v1.0.4-STABLE</span>
+            </div>
+        </div>
+
+        <div class="flynx-container">
+            <div class="controls-panel mb-4 p-3 rounded" style="background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.1); display: none;">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <button class="btn btn-outline-info" id="flynx-scan-btn" onclick="startFlynxScan()">
+                            <i class="fas fa-radar mr-2"></i> INITIALIZE DEEP SCAN
+                        </button>
+                    </div>
+                    <div class="col text-right">
+                        <span id="scan-timer" class="text-monospace small text-info">ENGINE READY</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="flynx-results" class="flynx-grid">
+                <!-- Data will be populated by startFlynxScan() -->
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+:root {
+    --flynx-cyan: #00f2ff;
+    --flynx-bg: #0a0c10;
+    --flynx-card: #141820;
+}
+
+.flynx-container {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.flynx-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.node-card {
+    background: var(--flynx-card);
+    border: 1px solid #2d343f;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.node-card:hover {
+    border-color: var(--flynx-cyan);
+    box-shadow: 0 0 20px rgba(0,242,255,0.1);
+    transform: translateY(-2px);
+}
+
+.node-header {
+    border-bottom: 1px solid #2d343f;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+}
+
+.node-ip {
+    font-size: 1.25rem;
+    color: var(--flynx-cyan);
+    font-weight: 700;
+}
+
+.node-dns {
+    font-size: 0.8rem;
+    color: #8b949e;
+}
+
+.port-map {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 1rem 0;
+}
+
+.port-item {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #1c2128;
+    border: 1px solid #30363d;
+}
+
+.port-item.open {
+    color: #3fb950;
+    border-color: rgba(63,185,80,0.3);
+    background: rgba(63,185,80,0.05);
+}
+
+.port-item.closed {
+    color: #f85149;
+    border-color: rgba(248,81,73,0.3);
+    opacity: 0.6;
+}
+
+.node-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #8b949e;
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #2d343f;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    background: #3fb950;
+    box-shadow: 0 0 8px #3fb950;
+}
+
+.pulse {
+    animation: pulse-animation 2s infinite;
+}
+
+@keyframes pulse-animation {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 242, 255, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 242, 255, 0); }
+}
+</style>
+
+<script>
+async function startFlynxScan() {
+    const grid = document.getElementById('flynx-results');
+    const timer = document.getElementById('scan-timer');
+    
+    grid.innerHTML = `
+        <div class="col-12 text-center p-5">
+            <div class="spinner-border text-info pulse mb-3" role="status"></div>
+            <h3 class="text-info">SYNCHRONIZING FLYNX INTERFACES...</h3>
+            <p class="text-muted">Serializing port states and DNS resolutions...</p>
+        </div>
+    `;
+    
+    try {
+        const start = Date.now();
+        const response = await fetch('/api/network/flynx-scan');
+        const data = await response.json();
+        const duration = (Date.now() - start) / 1000;
+        
+        if (data.success) {
+            const nodeCount = data.nodes.length;
+            const protocol = data.protocol || "FLYNX v2.0-ENHANCED";
+            timer.textContent = `${protocol} | ${nodeCount} NODES DETECTED | ${duration.toFixed(2)}s`;
+            if (nodeCount === 0) {
+                grid.innerHTML = `
+                    <div class="col-12 text-center p-5">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3 text-warning"></i>
+                        <h3 class="text-warning">ZERO NODES BROADCASTING</h3>
+                        <p class="text-muted">No peer nodes found in the current subnet. This can happen if network isolation is active.</p>
+                        <button class="btn btn-outline-info mt-3" onclick="startFlynxScan()">RE-SYNC MESH</button>
+                    </div>
+                `;
+            } else {
+                renderFlynx(data.nodes);
+            }
+        } else {
+            grid.innerHTML = \`<div class="alert alert-danger">FLYNX CRITICAL ERROR: \${data.error}</div>\`;
+        }
+    } catch (e) {
+        grid.innerHTML = '<div class="alert alert-danger">COMMUNICATION BREAKDOWN: Could not reach FLYNX core.</div>';
+    }
+}
+
+function renderFlynx(nodes) {
+    const grid = document.getElementById('flynx-results');
+    grid.innerHTML = '';
+    
+    nodes.forEach(node => {
+        const card = document.createElement('div');
+        card.className = 'node-card';
+        
+        const portsHtml = node.ports.map(p => 
+            `\x3cspan class="port-item ${p.status}"\x3e${p.port}/${p.status.toUpperCase()}${p.service ? ' ('+p.service+')' : ''}\x3c/span\x3e`
+        ).join('');
+        
+        card.innerHTML = `
+            <div class="node-header">
+                <div class="d-flex justify-content-between">
+                    <span class="node-ip">${node.ip}</span>
+                    <span class="badge bg-dark text-muted">${node.format}</span>
+                </div>
+                <div class="node-dns">${node.dns}</div>
+            </div>
+            <div class="node-body">
+                <div class="small text-muted mb-2">PORT SERIALIZATION:</div>
+                <div class="port-map">
+                    ${portsHtml}
+                </div>
+            </div>
+            <div class="node-meta">
+                <span><i class="fas fa-microchip mr-1"></i> ${node.os}</span>
+                <span class="text-info">${node.latency}</span>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+// AUTO-INITIALIZE ON LOAD
+document.addEventListener('DOMContentLoaded', () => {
+    startFlynxScan();
+    // Auto-refresh every 30 seconds
+    setInterval(startFlynxScan, 30000);
+});
+</script>
+{% endblock %}

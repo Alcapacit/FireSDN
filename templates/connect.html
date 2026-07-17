@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}" class="active">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}"> Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+            <a href="{{ url_for('plans_page') }}">Plans</a>
+        </nav>
+    </aside>
+    <main class="dashboard-content">
+        <div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+                    <h3 class="mb-0">Connect Hub</h3>
+                    <span class="badge bg-success">Established</span>
+                </div>
+                <div class="card-body p-4 text-center" id="hubContainer">
+                    <div id="permissionRequest">
+                        <i class="fas fa-satellite-dish fa-5x mb-4 text-primary"></i>
+                        <h2>Transform this Computer into a Hub</h2>
+                        <p class="lead">To route other devices through your network, we need local access.</p>
+                        <button class="btn btn-primary btn-lg mt-3" onclick="requestPermissions()">
+                            <i class="fas fa-shield-alt mr-2"></i> Connect
+                        </button>
+                    </div>
+
+                    <div id="scanningMode" class="d-none">
+                        <div class="spinner-border text-primary mb-4" style="width: 4rem; height: 4rem;" role="status"></div>
+                        <h3>Scanning for Cloudspace...</h3>
+                        <p class="text-muted">Open Bluetooth settings on your phone or other device and look for the desktop name</p>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <div class="card bg-light p-3">
+                                    <h6 class="text-primary"><i class="fas fa-signal mr-1"></i> Signal Density</h6>
+                                    <div class="h4 mb-0" id="signalDensity">--</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light p-3">
+                                    <h6 class="text-success"><i class="fas fa-microchip mr-1"></i> Peer Power</h6>
+                                    <div class="h4 mb-0" id="peerPower">--</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light p-3">
+                                    <h6 class="text-info"><i class="fas fa-project-diagram mr-1"></i>Network Hops</h6>
+                                    <div class="h4 mb-0" id="meshHops">--</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="deviceFound" class="mt-5 d-none">
+                            <div class="card bg-light border-primary shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="text-left">
+                                            <h5 class="mb-0 text-primary" id="detectedName"><i class="fas fa-link mr-2"></i> Connecting...</h5>
+                                            <small class="text-muted" id="detectedType">Analyzing Hardware Signature...</small>
+                                        </div>
+                                        <div class="badge badge-pill badge-primary" id="proximityScore">Proximity: --</div>
+                                    </div>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button class="btn btn-success px-4" onclick="handleDevice('Accept')">Authorize Link</button>
+                                        <button class="btn btn-outline-danger ml-2" onclick="handleDevice('Deny')">Ignore</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="connectedMode" class="d-none">
+                        <div class="alert alert-success py-4">
+                            <i class="fas fa-check-circle fa-4x mb-3"></i>
+                            <h2 id="connectedHeader">Device Connected & Routed</h2>
+                            <p>Routing through Speed Sharing Advanced Network (Tier 1 Priority)</p>
+                            <hr>
+                            <div class="row text-left">
+                                <div class="col-md-4">
+                                    <p class="mb-1"><small class="text-muted">Status</small></p>
+                                    <p><strong><span class="badge badge-success">Active Hub</span></strong></p>
+                                    <p class="mb-1"><small class="text-muted">Device Name</small></p>
+                                    <p><strong id="connectedDeviceName">--</strong></p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-1"><small class="text-muted">Routing Region</small></p>
+                                    <p><strong id="connectedRegion">Brazil (Optimized)</strong></p>
+                                    <p class="mb-1"><small class="text-muted">Protocol</small></p>
+                                    <p><strong id="connectedProtocol">Form-Speed-P2P/1.0</strong></p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-1"><small class="text-muted">Throughput</small></p>
+                                    <p><strong><span class="text-success" id="connectedThroughput">1.2 Gbps</span></strong></p>
+                                    <p class="mb-1"><small class="text-muted">Latency</small></p>
+                                    <p><strong><span class="text-info" id="connectedLatency">12ms</span></strong></p>
+                                </div>
+                            </div>
+                            <div class="row mt-4">
+                                <div class="col-md-12">
+                                    <div class="card bg-dark text-white p-3">
+                                        <h6><i class="fas fa-chart-line mr-2"></i> Real-time Traffic Flow</h6>
+                                        <div class="progress mb-2" style="height: 10px;">
+                                            <div id="uploadProgress" class="progress-bar bg-primary" role="progressbar" style="width: 45%"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between small">
+                                            <span>Upload: <span id="uploadSpeed">450 Mbps</span></span>
+                                            <span>Download: <span id="downloadSpeed">750 Mbps</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function requestPermissions() {
+    // Check if Bluetooth is enabled via Web Bluetooth API
+    if (!navigator.bluetooth) {
+        alert("Bluetooth is NOT supported on this format - please make sure your device supports Bluetooth routing.");
+        return;
+    }
+
+    navigator.bluetooth.getAvailability().then(available => {
+        if (!available) {
+            alert("Bluetooth is disabled. Please turn on Bluetooth in your computer settings to use the Connect feature.");
+            return;
+        }
+
+        document.getElementById('permissionRequest').classList.add('d-none');
+        document.getElementById('scanningMode').classList.remove('d-none');
+        
+        // Scan for ALL nearby Bluetooth devices
+        navigator.bluetooth.requestDevice({
+            acceptAllCloudspace: true,
+            optionalServices: ['battery_service', 'device_information']
+        }).then(device => {
+            const foundDiv = document.getElementById('deviceFound');
+            const nameEl = document.getElementById('detectedName');
+            const typeEl = document.getElementById('detectedType');
+            const proximityEl = document.getElementById('proximityScore');
+            
+            foundDiv.classList.remove('d-none');
+            nameEl.innerHTML = `<i class="fab fa-bluetooth-b mr-2"></i> ${device.name || 'Unknown Node'}`;
+            typeEl.textContent = device.id.startsWith('web') ? 'Virtual Mesh Node' : ' Link';
+            proximityEl.textContent = `Proximity: ${Math.floor(Math.random() * 20 + 80)}%`;
+            
+            // Update real-time stats
+            document.getElementById('signalDensity').textContent = (Math.random() * 5 + 2).toFixed(1) + ' GHz';
+            document.getElementById('peerPower').textContent = (Math.random() * 50 + 50).toFixed(0) + ' GFLOPS';
+            document.getElementById('meshHops').textContent = Math.floor(Math.random() * 3 + 1);
+
+        // Auto-route logic: When paired, inform the backend to start routing for this MAC/ID
+        fetch('/api/devices/route_peer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: device.id, name: device.name })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log("Backend routing confirmed");
+            }
+        });
+        }).catch(error => {
+            console.log("Bluetooth scan cancelled or failed: " + error);
+        });
+    });
+}
+
+function handleDevice(action) {
+    if (action === 'Accept') {
+        const foundDiv = document.getElementById('deviceFound');
+        const deviceName = foundDiv.querySelector('h5').textContent.trim();
+        
+        document.getElementById('scanningMode').classList.add('d-none');
+        document.getElementById('connectedMode').classList.remove('d-none');
+        
+        // Update live data in the UI
+        document.getElementById('connectedDeviceName').textContent = deviceName;
+        document.getElementById('connectedRegion').textContent = "Brazil (Optimized)";
+        document.getElementById('connectedProtocol').textContent = "Form-Speed-P2P/1.0";
+        document.getElementById('connectedThroughput').textContent = (Math.random() * 0.8 + 0.8).toFixed(1) + " Gbps";
+        
+        // Show Global Connection Banner
+        const banner = document.getElementById('connection-banner');
+        if (banner) {
+            banner.classList.remove('d-none');
+        }
+        
+            // APN Configuration Simulation
+            const apnStatus = document.createElement('div');
+            apnStatus.id = 'apnConfigStatus';
+            apnStatus.className = 'alert alert-warning mt-3';
+            apnStatus.innerHTML = '<i class="fas fa-mobile-alt mr-2"></i> Requesting APN Permission from Device...';
+            document.getElementById('connectedMode').appendChild(apnStatus);
+
+            setTimeout(() => {
+                apnStatus.className = 'alert alert-info mt-3';
+                apnStatus.innerHTML = '<i class="fas fa-cog fa-spin mr-2"></i> Configuring Direct Form APN...';
+                
+                setTimeout(() => {
+                    apnStatus.className = 'alert alert-success mt-3';
+                    apnStatus.innerHTML = `<i class="fas fa-check-double mr-2"></i> Direct Form APN Configured Successfully (APN: <a href="https://${window.location.host}" target="_blank" style="color: white; text-decoration: underline;">form.speed.net</a>)`;
+                    
+                    // Start live throughput animation
+                    setInterval(() => {
+                        const up = (Math.random() * 200 + 300).toFixed(0);
+                        const down = (Math.random() * 400 + 600).toFixed(0);
+                        const latency = (Math.random() * 5 + 8).toFixed(0);
+                        const total = ((parseFloat(up) + parseFloat(down)) / 1000).toFixed(1);
+                        
+                        const elThroughput = document.getElementById('connectedThroughput');
+                        const elLatency = document.getElementById('connectedLatency');
+                        const elUp = document.getElementById('uploadSpeed');
+                        const elDown = document.getElementById('downloadSpeed');
+                        const elBar = document.getElementById('uploadProgress');
+                        
+                        if (elThroughput) elThroughput.textContent = total + " Gbps";
+                        if (elLatency) elLatency.textContent = latency + "ms";
+                        if (elUp) elUp.textContent = up + " Mbps";
+                        if (elDown) elDown.textContent = down + " Mbps";
+                        if (elBar) elBar.style.width = ((up / (parseFloat(up) + parseFloat(down))) * 100) + "%";
+                    }, 1500);
+                }, 3000);
+            }, 2000);
+        
+        alert(`Link established with ${deviceName}. Direct Form APN configuration pushed.`);
+    } else {
+        alert("Device connection denied.");
+        document.getElementById('deviceFound').classList.add('d-none');
+    }
+}
+</script>
+{% endblock %}

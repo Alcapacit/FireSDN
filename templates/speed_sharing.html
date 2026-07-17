@@ -1,0 +1,557 @@
+{% extends 'base.html' %}
+
+{% block title %}Speed Sharing - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('speed_sharing_dashboard') }}" class="active">Speed Sharing</a>
+            <a href="{{ url_for('incognito_mode') }}">Incognito Mode</a>
+            <a href="{{ url_for('download_page_dashboard') }}">Download</a>
+            <a href="{{ url_for('security_dashboard') }}">Security</a>
+            <a href="{{ url_for('tools_dashboard') }}">IP Protocol</a>
+            <a href="{{ url_for('cloud_dashboard') }}">Cloud</a>
+            <a href="{{ url_for('connect_hub_dashboard') }}">Connect</a>
+            <a href="{{ url_for('analytics_dashboard') }}">Analytics</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('history_dashboard') }}">History</a>
+            <a href="{{ url_for('devices_dashboard') }}">Cloudspace</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+            <a href="{{ url_for('plans_page') }}">Plans</a>
+        </nav>
+    </aside>
+    
+    <main class="dashboard-content">
+        <h1>Speed Sharing & Aggregation</h1>
+        <p class="page-description">Boost your connection by merging multiple network paths.</p>
+        
+        <div id="sba-status-banner" class="aggregation-card mb-4 p-4" style="background: linear-gradient(135deg, #1a73e8, #34a853); color: white; border-radius: 15px;">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2>SBA - Smart Bandwidth Aggregation</h2>
+                    <p id="sba-status-text">Native Engine: {% if user_state.engine_status == 'REAL_TIME_BONDING' %}ACTIVE{% else %}READY{% endif %}</p>
+                </div>
+                <div class="col-md-4 text-right">
+                    <button id="sba-btn" class="btn btn-blue btn-lg" onclick="startAggregation()">{% if user_state.engine_status == 'REAL_TIME_BONDING' %}Optimizing...{% else %}Go Fast!{% endif %}</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card mb-4 text-center p-3">
+                    <i class="fas fa-wifi fa-2x text-primary mb-2"></i>
+                    <h6>WiFi Path</h6>
+                    <div class="progress" style="height: 8px;"><div class="progress-bar bg-primary" style="width: 85%"></div></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mb-4 text-center p-3">
+                    <i class="fas fa-signal fa-2x text-success mb-2"></i>
+                    <h6>Cellular Path</h6>
+                    <div class="progress" style="height: 8px;"><div class="progress-bar bg-success" style="width: 45%"></div></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mb-4 text-center p-3">
+                    <i class="fas fa-share-alt fa-2x text-info mb-2"></i>
+                    <h6>Network Path</h6>
+                    <div class="progress" style="height: 8px;"><div class="progress-bar bg-info" style="width: 65%"></div></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="your-network-info">
+            <h3>Local Network</h3>
+            <div class="network-stats">
+                <div class="stat">
+                    <span class="label">IP Address</span>
+                    <span class="value">{{ metrics.get('ip_address', 'Detecting...') }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">ISP</span>
+                    <span class="value">{{ metrics.get('carrier', metrics.get('isp', 'Detecting...')) }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Location</span>
+                    <span class="value">{{ metrics.get('city', '') }}, {{ metrics.get('country', '') }}</span>
+                </div>
+            </div>
+        </div>
+        
+        {% if is_pro %}
+        <div class="pro-section">
+            <div class="sharing-controls">
+                <h2>Sharing Status</h2>
+                <div class="sharing-toggle-large">
+                    <label class="switch large">
+                        <input type="checkbox" id="sharing-toggle" {% if user_state.speed_sharing_enabled %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                    <div class="toggle-info">
+                        <span id="sharing-status-text">
+                            {% if user_state.speed_sharing_enabled %}Sharing Enabled{% else %}Sharing Disabled{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paste Allowance Menu for Pro Users -->
+            <div class="allowance-section paste-section">
+                <h2>Redeem Allowance</h2>
+                <p>Have an allowance code from another peer? Paste it here to join their network.</p>
+                <div class="redeem-form">
+                    <input type="text" id="allowance-input-pro" placeholder="Enter allowance code (e.g., FORM-SHARE-1-ABC12345)" class="allowance-input">
+                    <button class="btn btn-primary btn-large" id="use-allowance-btn-pro">Use Allowance</button>
+                </div>
+                <div id="redeem-result-pro" class="redeem-result"></div>
+            </div>
+            
+            <div class="allowance-section">
+                <h2>Generate Allowance</h2>
+                <p>Create an allowance code to share your optimized routes with others</p>
+                
+                <button class="btn btn-primary btn-large" id="generate-allowance-btn">Generate Allowance Code</button>
+                
+                <div id="allowance-result" class="allowance-result" style="display: none;">
+                    <div class="allowance-code-box">
+                        <span class="code-label">Share this code:</span>
+                        <code id="allowance-code" class="allowance-code"></code>
+                        <button class="btn btn-secondary" onclick="copyAllowanceCode()">Copy</button>
+                    </div>
+                    <p class="code-info">Valid for 7 days. Recipient gets 30 days of optimized routing.</p>
+                </div>
+                
+                <div class="my-guests">
+                    <h3>Connected Guests</h3>
+                    <div id="guests-list" class="guests-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        
+        <div class="guest-section">
+            <h2>Use Allowance Code</h2>
+            <p>Enter an allowance code from a Pro subscriber to access optimized internet routes</p>
+            
+            <div class="redeem-form">
+                <input type="text" id="allowance-input" placeholder="Enter allowance code (e.g., FORM-SHARE-1-ABC12345)" class="allowance-input">
+                <button class="btn btn-primary btn-large" id="use-allowance-btn">Use Allowance</button>
+            </div>
+            
+            <div id="redeem-result" class="redeem-result"></div>
+            
+            {% if user_state.speed_sharing_guest %}
+            <div class="guest-status-card active">
+                <h3>You're Connected!</h3>
+                <p>Connected to: <strong>{{ user_state.speed_sharing_host }}</strong></p>
+                <p>Access until: {{ user_state.guest_access_until[:10] if user_state.guest_access_until else 'N/A' }}</p>
+                <p class="benefit-info">You now have access to optimized routing through this connection.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="upgrade-cta">
+            <h3>Want to share with others?</h3>
+            <p>Subscribe FireSDN Plus to generate allowance codes and share optimized routes</p>
+            {% if is_pro %}
+            <button class="btn btn-primary" onclick="location.reload()">Refresh to Start Sharing</button>
+            {% else %}
+            <a href="{{ url_for('subscribe') }}" class="btn btn-primary">Start Sharing</a>
+            {% endif %}
+        </div>
+        
+        {% endif %}
+        
+        <div class="how-it-works">
+            <h2>How Allowance Codes Work</h2>
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <h3>FireSDN Plus Generates Code</h3>
+                    <p>Subscribers can generate allowance codes</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <h3>Share the Code</h3>
+                    <p>Send the code to friends or family</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <h3>Use Allowance</h3>
+                    <p>Recipient enters code to activate</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <h3>Enjoy Fast Routes</h3>
+                    <p>Get 30 days of optimized internet</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.your-network-info {
+    background: linear-gradient(135deg, rgba(26, 115, 232, 0.08), rgba(52, 168, 83, 0.05));
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+.network-stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+.network-stats .stat {
+    display: flex;
+    flex-direction: column;
+}
+.network-stats .label {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+}
+.network-stats .value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.pro-section, .guest-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+.allowance-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-light);
+}
+.allowance-result {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+.allowance-code-box {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.allowance-code {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.3rem;
+    padding: 1rem 2rem;
+    background: white;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--primary);
+}
+.code-info {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+.redeem-form {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+.allowance-input {
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+    text-transform: uppercase;
+    letter-spacing: 0.3rem;
+    font-size: 1.25rem;
+    text-align: center;
+    padding: 1rem;
+}
+.guest-status-card.active {
+    background: linear-gradient(135deg, rgba(52, 168, 83, 0.1), rgba(52, 168, 83, 0.03));
+    border: 2px solid var(--success);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin-top: 2rem;
+}
+.benefit-info {
+    color: var(--success);
+    font-weight: 500;
+}
+.upgrade-cta {
+    background: linear-gradient(135deg, rgba(26, 115, 232, 0.1), rgba(26, 115, 232, 0.03));
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    text-align: center;
+    margin-top: 2rem;
+}
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+.step {
+    text-align: center;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+.step-num {
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin: 0 auto 1rem;
+}
+.my-guests {
+    margin-top: 2rem;
+}
+.guests-list {
+    margin-top: 1rem;
+}
+.guest-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.5rem;
+}
+.paste-section {
+    margin-top: 1rem !important;
+    padding-top: 1rem !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 2rem;
+}
+</style>
+
+<script>
+async function startAggregation() {
+    const btn = document.getElementById('sba-btn');
+    const statusText = document.getElementById('sba-status-text');
+    
+    // MANDATORY NATIVE NEARBY DEVICES PERMISSION CHECK
+    try {
+        const triggerNativeDialog = async (bridge) => {
+            statusText.textContent = "Requesting System-Level Nearby Permission...";
+            // Check for Samsung DeX / High-level System Bridge
+            if (typeof bridge.requestNearbyPermission === 'function') {
+                await bridge.requestNearbyPermission();
+            } else if (typeof bridge.requestPermission === 'function') {
+                // Request the specific android permission group that triggers the "Nearby Cloudspace" system dialog
+                // These specific strings (BLUETOOTH_SCAN, etc) are identified by the OS as high-level permissions
+                await bridge.requestPermission("android.permission.NEARBY_WIFI_DEVICES");
+                await bridge.requestPermission("android.permission.BLUETOOTH_SCAN");
+                await bridge.requestPermission("android.permission.BLUETOOTH_ADVERTISE");
+                await bridge.requestPermission("android.permission.BLUETOOTH_CONNECT");
+            }
+            showNotification('System Nearby Access Granted', 'success');
+        };
+
+        const nativeBridge = window.F_SPEED_SYSTEM || 
+                           window.FireSDNNative ||
+                           window.AndroidBridge ||
+                           (window.external && window.external.firesdn);
+
+        if (nativeBridge) {
+            await triggerNativeDialog(nativeBridge);
+        } else if (navigator.bluetooth) {
+            statusText.textContent = "Requesting System-Level Nearby Permission...";
+            // Force the system-level Android "Nearby Cloudspace" dialog
+            await navigator.bluetooth.requestDevice({ 
+                filters: [{ namePrefix: 'F-SPEED-' }], 
+                optionalServices: [
+                    '0000feaa-0000-1000-8000-00805f9b34fb', // Eddystone
+                    '0000fed8-0000-1000-8000-00805f9b34fb', // Nearby
+                    '0000fd6f-0000-1000-8000-00805f9b34fb', // Tracker Detect
+                    '00001101-0000-1000-8000-00805f9b34fb'  // Serial Port
+                ]
+            });
+            showNotification('System Nearby Access Granted', 'success');
+        }
+    } catch (e) {
+        console.warn("Nearby device permission declined or not supported", e);
+        showNotification('Permission Required: Enable "Nearby Cloudspace" to bond network paths.', 'danger');
+        statusText.textContent = "Permission Required for SBA";
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Aggregating...';
+    
+    try {
+        const response = await fetch('/api/speed-sharing/aggregate', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            statusText.textContent = `SBA Active: ${data.throughput} merged across ${data.paths} paths.`;
+            btn.textContent = 'Boosted!';
+            btn.style.background = '#34a853';
+            showNotification('Network paths bonded successfully', 'success');
+        }
+    } catch (e) {
+        showNotification('Aggregation failed', 'danger');
+        btn.disabled = false;
+        btn.textContent = 'Go Fast!';
+    }
+}
+
+{% if is_pro %}
+document.getElementById('sharing-toggle').addEventListener('change', async function() {
+    const enabled = this.checked;
+    try {
+        const response = await fetch('/api/speed-sharing/toggle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ enabled })
+        });
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('sharing-status-text').textContent = enabled ? 'Sharing Enabled' : 'Sharing Disabled';
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        this.checked = !enabled;
+    }
+});
+
+document.getElementById('generate-allowance-btn').addEventListener('click', async function() {
+    this.disabled = true;
+    this.textContent = 'Generating...';
+    try {
+        const response = await fetch('/api/speed-sharing/generate-invite', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('allowance-code').textContent = data.invite_code;
+            document.getElementById('allowance-result').style.display = 'block';
+            loadGuests();
+        } else {
+            alert(data.error || 'Failed to generate');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+    this.disabled = false;
+    this.textContent = 'Generate Allowance Code';
+});
+
+document.getElementById('use-allowance-btn-pro').addEventListener('click', async function() {
+    const code = document.getElementById('allowance-input-pro').value.trim().toUpperCase();
+    if (!code) { 
+        alert('Please enter an allowance code'); 
+        return; 
+    }
+    
+    this.disabled = true;
+    this.textContent = 'Activating...';
+    
+    try {
+        const response = await fetch('/api/speed-sharing/redeem-invite', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code })
+        });
+        const data = await response.json();
+        const result = document.getElementById('redeem-result-pro');
+        
+        if (data.success) {
+            result.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            result.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+    
+    this.disabled = false;
+    this.textContent = 'Use Allowance';
+});
+
+async function loadGuests() {
+    try {
+        const response = await fetch('/api/speed-sharing/my-invites');
+        const data = await response.json();
+        const list = document.getElementById('guests-list');
+        if (data.guests && data.guests.length > 0) {
+            list.innerHTML = data.guests.map(g => `
+                <div class="guest-card">
+                    <span><strong>${g.username}</strong></span>
+                    <span>Connected ${new Date(g.redeemed_at).toLocaleDateString()}</span>
+                </div>
+            `).join('');
+        } else {
+            list.innerHTML = '<p class="empty-state">No guests yet. Generate an allowance code to share!</p>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+loadGuests();
+
+{% else %}
+
+if (document.getElementById('start-sharing-cta-btn')) {
+    document.getElementById('start-sharing-cta-btn').addEventListener('click', function() {
+        window.location.href = "{{ url_for('subscribe') }}";
+    });
+}
+
+document.getElementById('use-allowance-btn').addEventListener('click', async function() {
+    const code = document.getElementById('allowance-input').value.trim().toUpperCase();
+    if (!code) { 
+        alert('Please enter an allowance code'); 
+        return; 
+    }
+    
+    this.disabled = true;
+    this.textContent = 'Activating...';
+    
+    try {
+        const response = await fetch('/api/speed-sharing/redeem-invite', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code })
+        });
+        const data = await response.json();
+        const result = document.getElementById('redeem-result');
+        
+        if (data.success) {
+            result.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            result.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+    
+    this.disabled = false;
+    this.textContent = 'Use Allowance';
+});
+
+{% endif %}
+
+function copyAllowanceCode() {
+    const code = document.getElementById('allowance-code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        alert('Allowance code copied!');
+    });
+}
+</script>
+{% endblock %}

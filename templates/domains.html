@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}Domains - FireSDN{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}>Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}">Dynamic Tunnel</a>
+            <a href="{{ url_for('discovery_dashboard') }}">Discovery</a>
+            <a href="{{ url_for('iot_dashboard') }}" {% if request.endpoint == 'iot_dashboard' %}class="active"{% endif %}>Smart Home</a>
+            <a href="{{ url_for('cloud_dashboard') }}" {% if request.endpoint == 'cloud_dashboard' %}class="active"{% endif %}>FDrive</a>
+            <a href="{{ url_for('password_manager_dashboard') }}" {% if request.endpoint == 'password_manager_dashboard' %}class="active"{% endif %}>Passwords</a>
+            <a href="{{ url_for('savings_dashboard') }}" {% if request.endpoint == 'savings_dashboard' %}class="active"{% endif %}>Savings</a>
+            <a href="{{ url_for('domains_dashboard') }}" class="active">Domains</a>
+            <a href="{{ url_for('account_dashboard') }}" {% if request.endpoint == 'account_dashboard' %}class="active"{% endif %}>Account</a>
+            <a href="{{ url_for('settings_dashboard') }}" {% if request.endpoint == 'settings_dashboard' %}class="active"{% endif %}>Settings</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <h1>Domain Search</h1>
+                <p class="page-description">Find the best domain plans for you.</p>
+            </div>
+        </div>
+
+        <div style="max-width:900px; margin:0 auto;">
+            <div style="background:#f8f9fa; padding:2rem; border-radius:12px; margin-bottom:2rem; border:1px solid #e0e0e0;">
+                <h3 style="margin:0 0 1rem;">Find the Best Domain Price</h3>
+                <div style="display:flex; gap:10px; margin-top:0.5rem;">
+                    <input type="text" id="domain-input" placeholder="e.g. myapp.com, mybusiness.io, coolproject.net"
+                           style="flex:1; padding:12px 16px; border:1px solid #ddd; border-radius:8px; font-size:1rem;"
+                           onkeypress="if(event.key==='Enter') searchDomain()">
+                    <button class="btn btn-primary" id="domain-search-btn" onclick="searchDomain()" style="padding:12px 28px; white-space:nowrap;">
+                        Search Domain
+                    </button>
+                </div>
+                <div style="display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap;">
+                    <span style="color:#666; font-size:0.85rem;">Popular TLDs:</span>
+                    <button onclick="suggestTLD('.com')" class="quick-tag">.com</button>
+                    <button onclick="suggestTLD('.io')" class="quick-tag">.io</button>
+                    <button onclick="suggestTLD('.net')" class="quick-tag">.net</button>
+                    <button onclick="suggestTLD('.org')" class="quick-tag">.org</button>
+                    <button onclick="suggestTLD('.co')" class="quick-tag">.co</button>
+                    <button onclick="suggestTLD('.app')" class="quick-tag">.app</button>
+                    <button onclick="suggestTLD('.dev')" class="quick-tag">.dev</button>
+                </div>
+            </div>
+
+            <div id="results-container" style="display:none;">
+                <div id="loading-state" style="text-align:center; padding:3rem;">
+                    <div class="spinner" style="margin:0 auto 1rem;"></div>
+                    <p id="loading-msg" style="color:#666;">Checking availability and prices across all registrars...</p>
+                </div>
+
+                <div id="results-content" style="display:none;">
+                    <div style="margin-bottom:1rem; padding:0.75rem 1rem; background:#e8f0fe; border-radius:8px; border-left:3px solid #1a73e8; font-size:0.83rem; color:#333;">
+                        <i class="fas fa-info-circle" style="color:#1a73e8;"></i> <strong>Availability</strong> is checked on many registries. <strong>Prices</strong> are based on each registrar's published pricing and plans— Make sure to double check domain avaliability and plan directly, as prices can change.
+                    </div>
+                    <div style="margin-bottom:1.5rem; padding:1rem 1.5rem; border-radius:10px;" id="availability-badge"></div>
+
+                    <div id="best-registrar-card" style="display:none; background:linear-gradient(135deg,#1a73e8,#0d47a1); color:white; border-radius:12px; padding:1.5rem; margin-bottom:1.5rem;">
+                        <div style="font-size:0.85rem; opacity:0.9; margin-bottom:0.5rem;">BEST PRICE</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <div id="best-registrar-name" style="font-size:1.2rem; font-weight:700;"></div>
+                                <div id="best-registrar-note" style="opacity:0.85; font-size:0.9rem;"></div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div id="best-registrar-price" style="font-size:2rem; font-weight:bold;"></div>
+                                <div style="font-size:0.8rem; opacity:0.85;">per year</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 style="margin-bottom:1rem;">All Registrars</h4>
+                    <div id="registrars-list"></div>
+
+                    <div id="alternate-tlds" style="display:none; margin-top:2rem;">
+                        <h4>Also check these related domains:</h4>
+                        <div id="alt-tld-list" style="display:flex; flex-wrap:wrap; gap:0.75rem;"></div>
+                    </div>
+                </div>
+
+                <div id="error-state" style="display:none; background:#fff3cd; padding:1.5rem; border-radius:10px; border-left:4px solid #ffc107;">
+                    <strong>Notice:</strong>
+                    <p id="error-msg" style="margin:0.5rem 0 0;"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.spinner {
+    width: 36px; height: 36px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #1a73e8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.quick-tag {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.2s;
+}
+.quick-tag:hover { background: #1a73e8; color: white; border-color: #1a73e8; }
+
+.registrar-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.2s;
+}
+.registrar-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.registrar-card.cheapest { border-color: #34a853; border-width: 2px; }
+
+.registrar-logo {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: white;
+    white-space: nowrap;
+}
+.reg-cloudflare { background: #f48120; }
+.reg-godaddy { background: #1f6a14; }
+.reg-namecheap { background: #de3723; }
+.reg-porkbun { background: #ef7767; }
+.reg-google { background: #4285f4; }
+.reg-name { background: #003f87; }
+.reg-hover { background: #00adef; }
+.reg-dynadot { background: #ff7300; }
+.reg-other { background: #607d8b; }
+
+.alt-domain-pill {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+}
+.alt-domain-pill.available { border-color: #34a853; background: #e8f5e9; }
+.alt-domain-pill.taken { border-color: #ddd; opacity: 0.6; }
+</style>
+
+<script>
+let currentDomain = '';
+
+function suggestTLD(tld) {
+    const input = document.getElementById('domain-input');
+    const current = input.value.trim();
+    if (!current) {
+        input.focus();
+        return;
+    }
+    const base = current.split('.')[0];
+    input.value = base + tld;
+    searchDomain();
+}
+
+async function searchDomain() {
+    const domain = document.getElementById('domain-input').value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+    if (!domain) {
+        alert('Please enter a domain name');
+        return;
+    }
+    if (!domain.includes('.') || domain.split('.').some(p => !p)) {
+        alert('Please enter a valid domain like myapp.com');
+        return;
+    }
+
+    currentDomain = domain;
+
+    const btn = document.getElementById('domain-search-btn');
+    const container = document.getElementById('results-container');
+    const loading = document.getElementById('loading-state');
+    const content = document.getElementById('results-content');
+    const error = document.getElementById('error-state');
+
+    btn.disabled = true;
+    btn.textContent = 'Searching...';
+    container.style.display = 'block';
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    error.style.display = 'none';
+
+    const msgs = [
+        'Checking availability via DNS lookup...',
+        'Running WHOIS query...',
+        'Looking up registrar pricing data...',
+        'Comparing all registrar prices...',
+        'Checking alternate TLDs...',
+        'Almost done...'
+    ];
+    let mi = 0;
+    const interval = setInterval(() => {
+        document.getElementById('loading-msg').textContent = msgs[mi % msgs.length];
+        mi++;
+    }, 1000);
+
+    try {
+        const response = await fetch('/api/domains/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain })
+        });
+
+        const data = await response.json();
+        clearInterval(interval);
+        loading.style.display = 'none';
+
+        if (data.success) {
+            const badge = document.getElementById('availability-badge');
+            if (data.available) {
+                badge.style.background = '#e8f5e9';
+                badge.style.borderLeft = '4px solid #34a853';
+                badge.innerHTML = `<strong style="color:#34a853;">AVAILABLE</strong> &nbsp; <code style="font-size:1.1rem;">${domain}</code> is available for registration!`;
+            } else {
+                badge.style.background = '#ffebee';
+                badge.style.borderLeft = '4px solid #e53935';
+                badge.innerHTML = `<strong style="color:#e53935;">TAKEN</strong> &nbsp; <code style="font-size:1.1rem;">${domain}</code> is already registered. See alternatives below.`;
+            }
+
+            if (data.registrars && data.registrars.length > 0) {
+                const cheapest = data.registrars[0];
+                document.getElementById('best-registrar-card').style.display = 'block';
+                document.getElementById('best-registrar-name').textContent = cheapest.name;
+                document.getElementById('best-registrar-note').textContent = cheapest.note || '';
+                document.getElementById('best-registrar-price').textContent = cheapest.price_display;
+
+                const list = document.getElementById('registrars-list');
+                list.innerHTML = data.registrars.map((r, i) => {
+                    const logoClass = getRegistrarClass(r.name);
+                    return `
+                    <div class="registrar-card ${i === 0 ? 'cheapest' : ''}">
+                        <div style="display:flex; align-items:center; gap:1rem; flex:1;">
+                            <span class="registrar-logo ${logoClass}">${r.name}</span>
+                            <div>
+                                <div style="font-weight:600;">${r.name}</div>
+                                ${r.note ? `<div style="color:#888; font-size:0.8rem;">${r.note}</div>` : ''}
+                                ${r.renewal_price ? `<div style="color:#888; font-size:0.8rem;">Renewal: ${r.renewal_price}/yr</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="text-align:right; flex-shrink:0; margin-left:1rem;">
+                            <div style="font-size:1.4rem; font-weight:700; color:${i === 0 ? '#34a853' : '#333'};">${r.price_display}</div>
+                            <div style="font-size:0.75rem; color:#888;">per year</div>
+                            ${i === 0 ? '<div style="color:#34a853; font-size:0.75rem; font-weight:600;">CHEAPEST</div>' : ''}
+                            <a href="${r.url}" target="_blank" class="btn btn-small btn-outline" style="font-size:0.8rem; padding:4px 12px; margin-top:4px; display:inline-block;">Register</a>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            if (data.alternatives && data.alternatives.length > 0) {
+                document.getElementById('alternate-tlds').style.display = 'block';
+                document.getElementById('alt-tld-list').innerHTML = data.alternatives.map(a => `
+                    <div class="alt-domain-pill ${a.available ? 'available' : 'taken'}">
+                        <code>${a.domain}</code>
+                        ${a.available ? `<span style="color:#34a853; font-size:0.75rem; margin-left:6px;">Available ${a.price_from}</span>` : '<span style="color:#999; font-size:0.75rem; margin-left:6px;">Taken</span>'}
+                    </div>
+                `).join('');
+            }
+
+            content.style.display = 'block';
+        } else {
+            error.style.display = 'block';
+            document.getElementById('error-msg').textContent = data.message || 'Could not retrieve domain information. Please try again.';
+        }
+    } catch (e) {
+        clearInterval(interval);
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        document.getElementById('error-msg').textContent = 'Search failed: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Search Domain';
+    }
+}
+
+function getRegistrarClass(name) {
+    const n = name.toLowerCase();
+    if (n.includes('cloudflare')) return 'reg-cloudflare';
+    if (n.includes('godaddy')) return 'reg-godaddy';
+    if (n.includes('namecheap')) return 'reg-namecheap';
+    if (n.includes('porkbun')) return 'reg-porkbun';
+    if (n.includes('google')) return 'reg-google';
+    if (n.includes('name.com')) return 'reg-name';
+    if (n.includes('hover')) return 'reg-hover';
+    if (n.includes('dynadot')) return 'reg-dynadot';
+    return 'reg-other';
+}
+</script>
+{% endblock %}

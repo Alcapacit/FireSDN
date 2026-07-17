@@ -1,0 +1,1 @@
+print("FireSDN Device Client CLI")

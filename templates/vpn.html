@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% block title %}Dynamic Tunnel - FireSDN{% endblock %}
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('vpn_dashboard') }}" class="active">Dynamic Tunnel</a>
+            <a href="{{ url_for('discovery_dashboard') }}">Discovery</a>
+            <a href="{{ url_for('iot_dashboard') }}">Smart Home</a>
+            <a href="{{ url_for('cloud_dashboard') }}">FDrive</a>
+            <a href="{{ url_for('password_manager_dashboard') }}">Passwords</a>
+            <a href="{{ url_for('savings_dashboard') }}">Savings</a>
+            <a href="{{ url_for('domains_dashboard') }}">Domains</a>
+            <a href="{{ url_for('account_dashboard') }}">Account</a>
+            <a href="{{ url_for('settings_dashboard') }}">Settings</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <h1>Dynamic Tunnel</h1>
+                <p class="page-description">Create encrypted SSH tunnels for SSH, RDP, TCP, and other protocols — no port forwarding or static IP required.</p>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+
+            <!-- LEFT: Create Tunnel -->
+            <div class="card-panel">
+                <h3 style="margin:0 0 0.25rem;">Create Secure Tunnel</h3>
+                <p style="color:#888; font-size:0.85rem; margin-bottom:1.25rem;">All traffic is encrypted end-to-end using TLS. No credentials are ever exposed in the URL.</p>
+
+                <div class="field-group">
+                    <label>Protocol</label>
+                    <select id="tunnel-protocol" onchange="updatePortHint()">
+                        <option value="ssh">SSH — Secure Shell (port 22)</option>
+                        <option value="ssh43">SSH — Alternative port 43</option>
+                        <option value="tcp">TCP — Generic port forward</option>
+                        <option value="rdp">RDP — Remote Desktop (3389)</option>
+                        <option value="smb">SMB — File Share (445)</option>
+                        <option value="vnc">VNC — Remote Screen (5900)</option>
+                        <option value="http">HTTP — Web service (80)</option>
+                        <option value="https">HTTPS — Secure web (443)</option>
+                        <option value="postgresql">PostgreSQL (5432)</option>
+                        <option value="mysql">MySQL (3306)</option>
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <label>Local Port</label>
+                    <input type="number" id="tunnel-port" value="22" min="1" max="65535" placeholder="Port number">
+                    <span id="port-hint" style="color:#888; font-size:0.8rem; margin-top:4px; display:block;"></span>
+                </div>
+
+                <div class="field-group">
+                    <label>Tunnel Label <span style="font-weight:400; color:#aaa;">(optional)</span></label>
+                    <input type="text" id="tunnel-name" placeholder="e.g. dev-server, home-rpi">
+                </div>
+
+                <button class="btn btn-primary" id="create-tunnel-btn" onclick="createTunnel()" style="width:100%; padding:12px; margin-top:0.25rem;">
+                    <i class="fas fa-bolt mr-2"></i> Create Tunnel
+                </button>
+
+                <div id="tunnel-creating" style="display:none; text-align:center; padding:1.5rem 0;">
+                    <div class="spinner-inline"></div>
+                    <p style="color:#666; margin-top:0.5rem; font-size:0.9rem;">Establishing secure tunnel... (up to 30 seconds)</p>
+                </div>
+
+                <div id="tunnel-result" style="display:none; margin-top:1.25rem; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px; padding:1.25rem;">
+                    <div style="color:#2e7d32; font-weight:700; margin-bottom:0.75rem;"><i class="fas fa-check-circle mr-2"></i>Tunnel Active</div>
+                    <div id="connection-instructions"></div>
+                </div>
+
+                <div id="tunnel-error" style="display:none; margin-top:1rem; background:#ffebee; border:1px solid #ffcdd2; border-radius:10px; padding:1rem; color:#c62828; font-size:0.9rem;"></div>
+            </div>
+
+            <!-- RIGHT: How to connect -->
+            <div class="card-panel">
+                <h3 style="margin:0 0 1rem;">How It Works</h3>
+                <div class="how-step">
+                    <div class="step-num">1</div>
+                    <div><strong>Create tunnel on this server</strong><br><span style="color:#888; font-size:0.85rem;">Click "Create Tunnel" to expose a local port through an encrypted secure tunnel.</span></div>
+                </div>
+                <div class="how-step">
+                    <div class="step-num">2</div>
+                    <div><strong>Install the FireSDN Access Client on your device</strong><br><span style="color:#888; font-size:0.85rem;">The device you're connecting FROM needs the FireSDN Access Client to route traffic through the secure tunnel.</span>
+                        <div style="background:#1e1e2e; border-radius:8px; padding:0.75rem; margin-top:0.5rem;">
+                            <code style="color:#80cbc4; font-size:0.78rem;"># Linux / Debian<br>curl -L --output firesdn-access.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && sudo dpkg -i firesdn-access.deb</code>
+                        </div>
+                        <span style="font-size:0.75rem; color:#aaa;">macOS: <code>brew install cloudflare/cloudflare/cloudflared</code> &nbsp;|&nbsp; Windows: download from the GitHub releases page</span>
+                    </div>
+                </div>
+                <div class="how-step">
+                    <div class="step-num">3</div>
+                    <div><strong>Connect using the generated SSH command</strong><br><span style="color:#888; font-size:0.85rem;">Each tunnel generates a ready-to-use SSH command — just copy and paste it on your client machine.</span></div>
+                </div>
+                <div style="margin-top:1.25rem; padding:1rem; background:#fffde7; border-radius:10px; border-left:4px solid #f9a825;">
+                    <strong style="font-size:0.85rem;"><i class="fas fa-lock mr-1"></i> Security</strong>
+                    <p style="font-size:0.8rem; margin:0.3rem 0 0; color:#555;">All traffic is TLS-encrypted through an encrypted global relay network. Tunnels are ephemeral — they disappear when stopped. Your local service is never exposed directly to the internet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Tunnels -->
+        <div class="card-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="margin:0;">Active Tunnels</h3>
+                <button class="btn btn-outline btn-small" onclick="loadTunnels()"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+            </div>
+            <div id="tunnel-list">
+                <p style="color:#aaa; text-align:center; padding:2rem 0;">Loading tunnels...</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.card-panel {
+    background: var(--bg-secondary, #f8f9fa);
+    border: 1px solid var(--border-light, #e0e0e0);
+    border-radius: 14px;
+    padding: 1.5rem;
+}
+.field-group { margin-bottom: 1rem; }
+.field-group label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; }
+.field-group input, .field-group select {
+    width: 100%; padding: 10px 12px; border: 1px solid #ddd;
+    border-radius: 8px; font-size: 0.95rem; background: white;
+}
+.how-step {
+    display: flex; gap: 1rem; align-items: flex-start;
+    margin-bottom: 1.25rem;
+}
+.step-num {
+    min-width: 28px; height: 28px; border-radius: 50%;
+    background: #1a73e8; color: white; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; flex-shrink: 0;
+}
+.spinner-inline {
+    display: inline-block; width: 28px; height: 28px;
+    border: 3px solid #f0f0f0; border-top: 3px solid #1a73e8;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.tunnel-card {
+    background: white; border: 1px solid #e0e0e0; border-radius: 10px;
+    padding: 1.25rem; margin-bottom: 0.75rem;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 1rem; flex-wrap: wrap;
+}
+.tunnel-card.active { border-left: 4px solid #34a853; }
+.conn-block {
+    background: #1e1e2e; border-radius: 8px; padding: 0.75rem 1rem;
+    margin-top: 0.5rem; position: relative;
+}
+.conn-block code { color: #a5d6a7; font-size: 0.82rem; word-break: break-all; display: block; }
+.copy-btn {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(255,255,255,0.1); border: none; border-radius: 6px;
+    color: #ccc; padding: 4px 8px; font-size: 0.75rem; cursor: pointer;
+}
+.copy-btn:hover { background: rgba(255,255,255,0.2); }
+.proto-badge {
+    display: inline-block; font-size: 0.7rem; font-weight: 700;
+    padding: 2px 10px; border-radius: 100px;
+    background: #e8f0fe; color: #1a73e8; margin-left: 0.5rem;
+}
+</style>
+
+<script>
+const PORT_HINTS = {
+    ssh: 22, ssh43: 43, rdp: 3389, smb: 445, vnc: 5900,
+    http: 80, https: 443, tcp: 8080, postgresql: 5432, mysql: 3306
+};
+const PROTOCOL_NOTES = {
+    ssh: 'Standard SSH — works through virtually any firewall',
+    ssh43: 'SSH on port 43 — bypasses most corporate firewalls that block 22',
+    tcp: 'Generic TCP — use for any protocol not listed above',
+    rdp: 'Remote Desktop Protocol — connect to Windows machines',
+    smb: 'Samba/Windows file sharing over secure tunnel',
+    vnc: 'VNC remote desktop — cross-platform screen sharing',
+    http: 'HTTP web service — dev servers, dashboards',
+    https: 'HTTPS web service — secure web apps',
+    postgresql: 'PostgreSQL database — remote DB access',
+    mysql: 'MySQL database — remote DB access',
+};
+
+function updatePortHint() {
+    const proto = document.getElementById('tunnel-protocol').value;
+    const portInput = document.getElementById('tunnel-port');
+    const hint = document.getElementById('port-hint');
+    if (PORT_HINTS[proto]) portInput.value = PORT_HINTS[proto];
+    hint.textContent = PROTOCOL_NOTES[proto] || '';
+}
+updatePortHint();
+
+function buildConnectionInstructions(tunnelUrl, protocol, localPort, label) {
+    const proxyCmd = `cloudflared access tcp --hostname ${tunnelUrl}`;
+    const sshProxy = `cloudflared access ssh --hostname ${tunnelUrl}`;
+    let html = `<div style="margin-bottom:0.5rem; font-size:0.85rem; color:#555;">Secure tunnel endpoint: <code style="background:#f0f4f8; padding:2px 6px; border-radius:4px; font-size:0.8rem;">${tunnelUrl}</code></div>`;
+
+    if (protocol === 'ssh' || protocol === 'ssh43') {
+        const sshCmd = `ssh -o ProxyCommand="${sshProxy}" <username>@${tunnelUrl}`;
+        const sshCfg = `Host firesdn-tunnel\n    HostName ${tunnelUrl}\n    ProxyCommand cloudflared access ssh --hostname %h\n    User <your_username>`;
+        html += `
+        <p style="font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.85rem;">SSH Connection Command (run on your client):</p>
+        <div class="conn-block">
+            <code>ssh -o ProxyCommand="${sshProxy}" &lt;username&gt;@${tunnelUrl}</code>
+            <button class="copy-btn" onclick="copyText('ssh -o ProxyCommand=\\"${sshProxy}\\" username@${tunnelUrl}')">Copy</button>
+        </div>
+        <p style="font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.85rem;">Or save to ~/.ssh/config for future use:</p>
+        <div class="conn-block">
+            <code>Host firesdn-tunnel<br>&nbsp;&nbsp;&nbsp;&nbsp;HostName ${tunnelUrl}<br>&nbsp;&nbsp;&nbsp;&nbsp;ProxyCommand cloudflared access ssh --hostname %h<br>&nbsp;&nbsp;&nbsp;&nbsp;User &lt;your_username&gt;</code>
+            <button class="copy-btn" onclick="copyText('Host firesdn-tunnel\\n    HostName ${tunnelUrl}\\n    ProxyCommand cloudflared access ssh --hostname %h\\n    User your_username')">Copy</button>
+        </div>
+        <p style="color:#555; font-size:0.8rem; margin-top:0.75rem;"><i class="fas fa-info-circle mr-1"></i> Once saved to config, connect with: <code>ssh firesdn-tunnel</code></p>`;
+    } else if (protocol === 'rdp') {
+        html += `
+        <p style="font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.85rem;">RDP — Start secure local listener on your client:</p>
+        <div class="conn-block">
+            <code>cloudflared access tcp --hostname ${tunnelUrl} --url localhost:3389</code>
+            <button class="copy-btn" onclick="copyText('cloudflared access tcp --hostname ${tunnelUrl} --url localhost:3389')">Copy</button>
+        </div>
+        <p style="color:#666; font-size:0.8rem; margin-top:0.5rem;">Then connect your RDP client to <code>localhost:3389</code></p>`;
+    } else if (protocol === 'vnc') {
+        html += `
+        <p style="font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.85rem;">VNC — Start secure local listener on your client:</p>
+        <div class="conn-block">
+            <code>cloudflared access tcp --hostname ${tunnelUrl} --url localhost:5900</code>
+            <button class="copy-btn" onclick="copyText('cloudflared access tcp --hostname ${tunnelUrl} --url localhost:5900')">Copy</button>
+        </div>
+        <p style="color:#666; font-size:0.8rem; margin-top:0.5rem;">Then connect your VNC client to <code>localhost:5900</code></p>`;
+    } else if (protocol === 'smb') {
+        html += `
+        <p style="font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.85rem;">SMB — Start secure local listener on your client:</p>
+        <div class="conn-block">
+            <code>cloudflared access tcp --hostname ${tunnelUrl} --url localhost:445</code>
+            <button class="copy-btn" onclick="copyText('cloudflared access tcp --hostname ${tunnelUrl} --url localhost:445')">Copy</button>
+        </div>
+        <p style="color:#666; font-size:0.8rem; margin-top:0.5rem;">Then map network drive to <code>\\\\localhost\\share</code></p>`;
+    } else if (protocol === 'postgresql') {
+        html += `
+        <p style="font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.85rem;">PostgreSQL — Start secure local listener on your client:</p>
+        <div class="conn-block">
+            <code>cloudflared access tcp --hostname ${tunnelUrl} --url localhost:5432</code>
+            <button class="copy-btn" onclick="copyText('cloudflared access tcp --hostname ${tunnelUrl} --url localhost:5432')">Copy</button>
+        </div>
+        <p style="color:#666; font-size:0.8rem; margin-top:0.5rem;">Then connect: <code>psql -h localhost -p 5432 -U username dbname</code></p>`;
+    } else if (protocol === 'mysql') {
+        html += `
+        <p style="font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.85rem;">MySQL — Start secure local listener on your client:</p>
+        <div class="conn-block">
+            <code>cloudflared access tcp --hostname ${tunnelUrl} --url localhost:3306</code>
+            <button class="copy-btn" onclick="copyText('cloudflared access tcp --hostname ${tunnelUrl} --url localhost:3306')">Copy</button>
+        </div>
+        <p style="color:#666; font-size:0.8rem; margin-top:0.5rem;">Then connect: <code>mysql -h 127.0.0.1 -P 3306 -u username -p</code></p>`;
+    } else {
+        html += `
+        <p style="font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.85rem;">TCP — Start secure local listener on your client:</p>
+        <div class="conn-block">
+            <code>cloudflared access tcp --hostname ${tunnelUrl} --url localhost:${localPort}</code>
+            <button class="copy-btn" onclick="copyText('cloudflared access tcp --hostname ${tunnelUrl} --url localhost:${localPort}')">Copy</button>
+        </div>`;
+    }
+    return html;
+}
+
+async function createTunnel() {
+    const protocol = document.getElementById('tunnel-protocol').value;
+    const port = parseInt(document.getElementById('tunnel-port').value);
+    const name = document.getElementById('tunnel-name').value.trim();
+
+    const btn = document.getElementById('create-tunnel-btn');
+    const creating = document.getElementById('tunnel-creating');
+    const result = document.getElementById('tunnel-result');
+    const error = document.getElementById('tunnel-error');
+
+    btn.style.display = 'none';
+    creating.style.display = 'block';
+    result.style.display = 'none';
+    error.style.display = 'none';
+
+    try {
+        const resp = await fetch('/api/tunnel/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ protocol: protocol === 'ssh43' ? 'ssh' : protocol, port, name })
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            result.style.display = 'block';
+            document.getElementById('connection-instructions').innerHTML =
+                buildConnectionInstructions(data.tunnel_url, protocol, port, name);
+            loadTunnels();
+        } else {
+            error.style.display = 'block';
+            error.textContent = 'Error: ' + (data.error || 'Could not create tunnel. Make sure a service is running on that port.');
+        }
+    } catch (e) {
+        error.style.display = 'block';
+        error.textContent = 'Network error: ' + e.message;
+    } finally {
+        creating.style.display = 'none';
+        btn.style.display = 'block';
+    }
+}
+
+async function stopTunnel(tunnelId) {
+    if (!confirm('Stop this tunnel?')) return;
+    await fetch('/api/tunnel/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tunnel_id: tunnelId })
+    });
+    loadTunnels();
+}
+
+async function loadTunnels() {
+    const list = document.getElementById('tunnel-list');
+    try {
+        const resp = await fetch('/api/tunnel/list');
+        const data = await resp.json();
+
+        if (!data.tunnels || data.tunnels.length === 0) {
+            list.innerHTML = '<p style="color:#aaa; text-align:center; padding:2rem 0; margin:0;">No active tunnels. Create one above to get started.</p>';
+            return;
+        }
+
+        list.innerHTML = data.tunnels.map(t => `
+            <div class="tunnel-card active">
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:700; margin-bottom:0.25rem;">${t.name} <span class="proto-badge">${t.protocol.toUpperCase()}:${t.local_port}</span></div>
+                    <div style="font-size:0.8rem; color:#888;">Started: ${new Date(t.started_at + 'Z').toLocaleTimeString()}</div>
+                    <div class="conn-block" style="margin-top:0.75rem;">
+                        <code>${t.tunnel_url}</code>
+                        <button class="copy-btn" onclick="copyText('${t.tunnel_url}')">Copy URL</button>
+                    </div>
+                </div>
+                <div style="flex-shrink:0; margin-top:0.25rem;">
+                    <button class="btn btn-small" style="background:#ff4d4d; color:white; border:none; border-radius:8px; padding:6px 14px;" onclick="stopTunnel('${t.tunnel_id}')">
+                        <i class="fas fa-stop mr-1"></i> Stop
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        list.innerHTML = '<p style="color:#ff4d4d;">Failed to load tunnels.</p>';
+    }
+}
+
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        const active = event.target;
+        const orig = active.textContent;
+        active.textContent = 'Copied!';
+        setTimeout(() => active.textContent = orig, 1500);
+    });
+}
+
+loadTunnels();
+setInterval(loadTunnels, 15000);
+</script>
+{% endblock %}
